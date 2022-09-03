@@ -27,8 +27,8 @@ require_once(e_ADMIN.'auth.php');
 // Include ren_help for display_help (while showing BBcodes)
 require_once(e_HANDLER.'ren_help.php');
 
-// Get language file (assume that the English language file is always present)
-include_lan(e_PLUGIN.'easyshop/languages/'.e_LANGUAGE.'.php');
+e107::lan("easyshop", NULL);
+
 require_once('includes/config.php');
 
 // Set the active menu option for admin_menu.php
@@ -139,9 +139,9 @@ if (e_QUERY != "" && substr(e_QUERY,-3) != "../" ) {
 }
 
 // Retrieve shop preferences to get image path
-$sql = new db;
-$sql -> db_Select(DB_TABLE_SHOP_PREFERENCES, "*", "store_id=1");
-while($row = $sql-> db_Fetch()){
+$sql = e107::getDb();
+$sql -> select(DB_TABLE_SHOP_PREFERENCES, "*", "store_id=1");
+while($row = $sql-> fetch()){
   $store_image_path = $row['store_image_path'];
 }
 
@@ -388,21 +388,23 @@ while ($files[$c]) {
 $ns->tablerender(EASYSHOP_UPLOAD_29.": <b>root/".$pathd."</b>&nbsp;&nbsp;[ ".count($dirs)." ".$dstr.", ".count($files)." ".$cstr." ]", $text);
 
 function dirsize($dir) {
-	$_SERVER["DOCUMENT_ROOT"].e_HTTP.$dir;
-	$dh = @opendir($_SERVER["DOCUMENT_ROOT"].e_HTTP.$dir);
-	$size = 0;
-	while ($file = @readdir($dh)) {
-		if ($file != "." and $file != "..") {
-			$path = $dir."/".$file;
-			if (is_file($_SERVER["DOCUMENT_ROOT"].e_HTTP.$path)) {
-				$size += filesize($_SERVER["DOCUMENT_ROOT"].e_HTTP.$path);
-			} else {
-				$size += dirsize($path."/");
+	if (is_dir($_SERVER["DOCUMENT_ROOT"] . e_HTTP . $dir))
+	{
+		$dh = @opendir($_SERVER["DOCUMENT_ROOT"].e_HTTP.$dir);
+		$size = 0;
+		while ($file = @readdir($dh)) {
+			if ($file != "." and $file != "..") {
+				$path = $dir."/".$file;
+				if (is_file($_SERVER["DOCUMENT_ROOT"].e_HTTP.$path)) {
+					$size += filesize($_SERVER["DOCUMENT_ROOT"].e_HTTP.$path);
+				} else {
+					$size += dirsize($path."/");
+				}
 			}
 		}
+		@closedir($dh);
+		return parsesize($size);
 	}
-	@closedir($dh);
-	return parsesize($size);
 }
 
 function parsesize($size) {

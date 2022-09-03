@@ -14,9 +14,9 @@
 */
 class ShopMail
 {
-  function easyshop_sendemail($send_to, $subject, $message, $headers2, $attachment_name) {
+  static function easyshop_sendemail($send_to, $subject, $message, $headers2, $attachment_name) {
     $domain_name = General::parseUrl(e_SELF); // Parse the current url
-    $domain_name = $domain_name[host]; // Retrieve the host name from the parsed array
+    $domain_name = $domain_name["host"]; // Retrieve the host name from the parsed array
     require_once(e_HANDLER.'mail.php');
     // $bcc_mail = "yourmailaccount@yourdomain.tld";
     if (!sendemail($send_to, $subject, $message, $to_name, "no-reply@".$domain_name, "EasyShop", $attachment_name, "", $bcc_mail)) {
@@ -26,26 +26,26 @@ class ShopMail
     }
   }
 
-  function easyshop_senddownloads($array, $to_email)
+  static function easyshop_senddownloads($array, $to_email)
   {
     $address = $to_email;
     // Loop throught the basket to detect dowloadable products
     foreach($array as $id => $item) {
-      $sql = new db;
-      $sql -> db_Select(DB_TABLE_SHOP_ITEMS, "*", "item_id=$item[db_id]");
-      if ($row = $sql-> db_Fetch()){
+      $sql = e107::getDb();
+      $sql -> select(DB_TABLE_SHOP_ITEMS, "*", "item_id=$item[db_id]");
+      if ($row = $sql-> fetch()){
         $download_product  = $row['download_product'];
         $download_filename = $row['download_filename'];
     		// Check if this is a downloadable product with valid download filename
     		if ($download_product == 2 && strlen($download_filename) > 0) {
-    		$scrambled_name = intval($item[db_id]).$download_filename;
+    		$scrambled_name = intval($item['db_id']).$download_filename;
     		$attachment_name_scrambled = "downloads/".MD5($scrambled_name);
     		$attachment_name = "downloads/".$download_filename;
     		// Create temporary original file to download with unscrambled name
     		if (!copy($attachment_name_scrambled, $attachment_name)) {
     			$message = EASYSHOP_CLASS_02." $attachment_name_scrambled...\n";
     		}
-    		$subject = EASYSHOP_CLASS_03." ".$item[item_name]." ".date("Y-m-d");
+    		$subject = EASYSHOP_CLASS_03." ".$item["item_name"]." ".date("Y-m-d");
     		$message = EASYSHOP_CLASS_04.": ".$download_filename."\n";
     		// $message .= "Download filename scrambled: ".$attachment_name_scrambled."\n"; // debug info
     		// $message .= "Download filename: ".$attachment_name; // debug info
@@ -62,7 +62,7 @@ class ShopMail
     }
   }
 
-  function easyshop_sendalert($product_id, $newstock, $minimum_level, $alert_type)
+  static function easyshop_sendalert($product_id, $newstock, $minimum_level, $alert_type)
   // Send alerts to shop owner
   // Parameters: 
   // $product_id = the item_id that the alert is send for
@@ -77,9 +77,9 @@ class ShopMail
 	$to_email = (!(isset($pref['siteadminemail']) && strlen($pref['siteadminemail'])==0)?$pref['replyto_email']:$pref['siteadminemail']); // Keep 0.7.8 compatible
 	// Retrieve product data
 	$product_id = intval($product_id);
-	$sql = new db;
-	$sql -> db_Select(DB_TABLE_SHOP_ITEMS, "*", "item_id=$product_id");
-	if ($row = $sql-> db_Fetch()){
+	$sql = e107::getDb();
+	$sql -> select(DB_TABLE_SHOP_ITEMS, "*", "item_id=$product_id");
+	if ($row = $sql-> fetch()){
 		// Set subject and message for each alert type
 		if ($alert_type == "1") { // Alert 1: stock is below minimum level of this product
 			$subject = EASYSHOP_CLASS_06." ".$row['item_name']; 
@@ -106,20 +106,20 @@ class ShopMail
 
 class Security
 {
-  function get_session_id()
-  {
-    static $session_id;
-    if ( $session_id == "" ) // 1.31 fix: setting static already sets the variable; thanks KVN
-    {
-      $session_id = session_id();
-    }
-    return $session_id;
-  }
+	static function get_session_id()
+	{
+		static $session_id;
+		if ($session_id == "") // 1.31 fix: setting static already sets the variable; thanks KVN
+		{
+			$session_id = session_id();
+		}
+		return $session_id;
+	}
 }
 
 class General
 {
-  function multiple_paging($total_pages,$items_per_page,$action,$action_id,$page_id,$page_devider)
+  static function multiple_paging($total_pages,$items_per_page,$action,$action_id,$page_id,$page_devider)
   // Parameters: $total_pages = the total pages that must be paginated
   // $items_per_page = the number of items represented per page
   // $action = action from url, e.g. catpage or prodpage
@@ -140,6 +140,7 @@ class General
       if ($f_action_id == "" or $f_action_id < 1 or $f_action_id == null) {
         $f_action_id = 1; // Set initial page if no page parameter or illegal parameter is given
       }
+		$page_text = '';
       while ($page_count <= $last_page) { // For each page counter display a page
 		if ( $page_count == $f_action_id ) { // If it is the page itself, no link
         //if ( $page_count == $last_page) { // If it is the page itself, no link
@@ -172,7 +173,7 @@ class General
     return $page_text;
   }
   
-  function determine_offset($f_action,$f_action_id,$f_items_per_page)
+  static function determine_offset($f_action,$f_action_id,$f_items_per_page)
   // Parameters: $action = action from url, e.g. catpage or prodpage
   // $action_id = action_id from url
   // $items_per_page = the number of items represented per page
@@ -189,7 +190,7 @@ class General
     return $f_offset;
   }
   
-  function validateDecimal($f_value) {
+  static function validateDecimal($f_value) {
   // Parameter: $f_value = value to be checked on maximum of 2 decimals
     if (!preg_match("/^[+-]?[0-9]*\.?[0-9]{0,2}$/", $f_value))
     {
@@ -200,7 +201,7 @@ class General
     return true;
   }
 
-  function getCommentTotal($pluginid, $id) {
+  static function getCommentTotal($pluginid, $id) {
      // Get number of comments for an item.
      // This method returns the number of comments for the supplied plugin/item id.
      // @param   string   a unique ID for this plugin, maximum of 10 character
@@ -208,32 +209,36 @@ class General
      // @return  int      number of comments for the supplied parameters
     global $pref, $e107cache, $tp;
     $query = "where comment_item_id='$id' AND comment_type='$pluginid'";
-    $mysql = new db();
-    return $mysql->db_Count("comments", "(*)", $query);
+    $mysql = e107::getDb('mysql');
+    return $mysql->count("comments", "(*)", $query);
   }
   
-  function getCurrentVersion(){
+  static function getCurrentVersion(){
   $current_version = strtolower(trim(file_get_contents('http://e107.webstartinternet.com/files/downloads/easyshop_ver.php')));
   return $current_version;
   }
   
-  function getEasyShopDownloadDir() {
+  static function getEasyShopDownloadDir() {
   $download_dir = "http://e107.webstartinternet.com/download.php?list.5";
   return $download_dir;
   }
-  
-  function Array_Clean($str,&$array) {
+
+	static function Array_Clean($str,&$array) {
     // Cleans a given string from an array
     // @param   string    the string that you want to delete from an array
     // @param   array     the name of the array you want to apply the clean function
-      if (in_array($str,$array)==true) {
-        foreach ($array as $key=>$value) {
-          if ($value==$str) unset($array[$key]);
-        }
-      }
+		if(is_array($array )) {
+			if (in_array($str, $array) == true)
+			{
+				foreach ($array as $key => $value)
+				{
+					if ($value == $str) unset($array[$key]);
+				}
+			}
+		}
   }
   
-  function CreateRandomDiscountCode() {
+  static function CreateRandomDiscountCode() {
    // Letter O (uppercase o) is not included; can be confused with zero (0)
    // The letter l (lowercase L), and the number 1 have been removed, as they can be easily mixed up
     $chars = "AaBbCcDdEeFfGgHhIiJjKkLMmNnoPpQqRrSsTtUuVvWwXxYyZz023456789,.;:#$%*=+[]";
@@ -249,7 +254,7 @@ class General
     return htmlspecialchars($random_discount_code);
   }
   
-  function parseUrl($url) {
+  static function parseUrl($url) {
     $r  = "^(?:(?P<scheme>\w+)://)?";
     $r .= "(?:(?P<login>\w+):(?P<pass>\w+)@)?";
     $r .= "(?P<host>(?:(?P<subdomain>[-\w\.]+)\.)?" . "(?P<domain>[-\w]+\.(?P<extension>\w+)))";
@@ -262,14 +267,14 @@ class General
     return $out;
   }
   
-  function easyshop_theme_head() {
+  static function easyshop_theme_head() {
 
   }
 } // End of class General
 
 class Shop
 {
-  function switch_columns($p_num_item_columns) {
+  static function switch_columns($p_num_item_columns) {
   // Returns column width percentage variable $column_width
   // @param   integer    the number of item columns from the settings
 		switch ($p_num_item_columns) {
@@ -292,7 +297,7 @@ class Shop
 		return $column_width;
   }
 
-  function show_checkout($p_session_id, $p_special_instr_text) {
+  static function show_checkout($p_session_id = null, $p_special_instr_text = '') {
 	// Default checkout method with PayPal (IPN)
     // Parameter $p_session_id is used to check the users' current session ID to prevent XSS vulnarabilities
     // Parameter $p_special_instr_text is used to pass e-mail special instructions for seller
@@ -308,9 +313,9 @@ class Shop
     	unset($tmp);
     }
 
-  	$sql2 = new db;
-  	$sql2 -> db_Select(DB_TABLE_SHOP_PREFERENCES, "*", "store_id=1");
-  	if ($row2 = $sql2-> db_Fetch()){
+  	$sql2 = e107::getDb();
+  	$sql2 -> select(DB_TABLE_SHOP_PREFERENCES, "*", "store_id=1");
+  	if ($row2 = $sql2-> fetch()){
   		$sandbox               = $row2['sandbox'];
     	$paypal_email          = $row2['paypal_email'];
     	$payment_page_style    = $row2['payment_page_style'];
@@ -324,9 +329,9 @@ class Shop
 		$enable_ipn 		   = $row2['enable_ipn']; // IPN addition
   	}
 
-    $sql3 = new db;
-  	$sql3 -> db_Select(DB_TABLE_SHOP_CURRENCY, "*", "currency_active=2");
-  	if ($row3 = $sql3-> db_Fetch()){
+    $sql3 = e107::getDb();
+  	$sql3 -> select(DB_TABLE_SHOP_CURRENCY, "*", "currency_active=2");
+  	if ($row3 = $sql3-> fetch()){
   		$unicode_character 	  = $row3['unicode_character'];
   		$paypal_currency_code = $row3['paypal_currency_code'];
   	}
@@ -376,7 +381,11 @@ class Shop
 				<input type='hidden' name='page_style' value='$payment_page_style'/>";
 
 		// Fill the Cart with products from the basket
-		$count_items = count($_SESSION['shopping_cart']); // Count number of different products in basket
+		$count_items = 0;
+		if(is_array($_SESSION['shopping_cart'])) {
+				$count_items = count($_SESSION['shopping_cart']); // Count number of different products in basket
+		}
+		
 		$array = $_SESSION['shopping_cart'];
 
 		$cart_count = 1; // PayPal requires to pass multiple products in a sequence starting at 1
@@ -504,9 +513,9 @@ class Shop
     	unset($tmp);
     }
 
-  	$sql2 = new db;
-  	$sql2 -> db_Select(DB_TABLE_SHOP_PREFERENCES, "*", "store_id=1");
-  	while($row2 = $sql2-> db_Fetch()){
+  	$sql2= e107::getDb('2');
+  	$sql2 -> select(DB_TABLE_SHOP_PREFERENCES, "*", "store_id=1");
+  	while($row2 = $sql2-> fetch()){
   		$sandbox = $row2['sandbox'];
     	$paypal_email = $row2['paypal_email'];
     	$payment_page_style = $row2['payment_page_style'];
@@ -517,9 +526,9 @@ class Shop
 		$email_order = $row2['email_order'];
   	}
 
-    $sql3 = new db;
-  	$sql3 -> db_Select(DB_TABLE_SHOP_CURRENCY, "*", "currency_active=2");
-  	while($row3 = $sql3-> db_Fetch()){
+    $sql3= e107::getDb('3');
+  	$sql3 -> select(DB_TABLE_SHOP_CURRENCY, "*", "currency_active=2");
+  	while($row3 = $sql3-> fetch()){
   		$unicode_character = $row3['unicode_character'];
   		$paypal_currency_code = $row3['paypal_currency_code'];
   	}
@@ -543,7 +552,7 @@ class Shop
 
     // Display check out button
     // <form target='_blank' action='$paypalDomain/cgi-bin/webscr' method='post'> leads to XHTML incompatible caused by target
-  	$f_text .= "
+  	$f_text = "
   	<form action='$paypalDomain/cgi-bin/webscr' method='post'>
 		<div>
 			<input type='hidden' name='cmd' value='_xclick' />
@@ -649,7 +658,7 @@ class Shop
     return $f_text;
   }
   
-  function include_prop($prop1_list, $prop1_array, $prop1_prices,$prop1_name,
+  static function include_prop($prop1_list, $prop1_array, $prop1_prices,$prop1_name,
                         $prop2_list, $prop2_array, $prop2_prices,$prop2_name,
                         $prop3_list, $prop3_array, $prop3_prices,$prop3_name,
                         $prop4_list, $prop4_array, $prop4_prices,$prop4_name,
@@ -683,13 +692,13 @@ class Shop
    return array($text, $property_prices);
   }
 
-  function include_disc ($discount_id, $discount_class, $discount_valid_from, $discount_valid_till,
+  static function include_disc ($discount_id, $discount_class, $discount_valid_from, $discount_valid_till,
                          $discount_code, $item_price, $discount_flag, $discount_percentage, $discount_price,
                          $property_prices, $unicode_character_before, $unicode_character_after, $print_discount_icons){
     // Function provides the discount handling for category and product details and returns discount price (when no discount code is applied)
     // Include selected discount in the product form
     if (isset($discount_id)) { // Include the product discount if it is filled in
-      $text .=  "<input type='hidden' name='discount_id' value='".$discount_id."'/>";
+      $text =  "<input type='hidden' name='discount_id' value='".$discount_id."'/>";
       // Determine if user class if applicable for this discount
       if (check_class($discount_class)) {
         // Determine if discount date is valid
@@ -765,7 +774,7 @@ class Tabs {
 
 	function run(){
 		if (count($this->tabs) > 0){
-			$text .= "<DIV CLASS='tabs'>\n";
+			$text = "<DIV CLASS='tabs'>\n";
 			$jsClear = "";
 			foreach($this->tabs as $tabname => $tabcontent){
 				$tabid = "tab_".$this->name."_$tabname";
@@ -803,7 +812,7 @@ class Tabs {
 } // End of class Tabs
 class Forms
 {
-	function add_to_cart_form($prop1_list, $prop1_array, $prop1_prices,$prop1_name,
+	static function add_to_cart_form($prop1_list, $prop1_array, $prop1_prices,$prop1_name,
 								  $prop2_list, $prop2_array, $prop2_prices,$prop2_name,
 								  $prop3_list, $prop3_array, $prop3_prices,$prop3_name,
 								  $prop4_list, $prop4_array, $prop4_prices,$prop4_name,
@@ -817,7 +826,7 @@ class Forms
 								  $category_id, $item_instock, $item_track_stock, $enable_ipn, $db_id,
 								  $category_order_class, $enable_number_input, $fill_basket)
 	{
-		$text .= "
+		$text = "
 			<br />
 			<form method='post' action='easyshop_basket.php'>
 				<div>";

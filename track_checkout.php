@@ -23,15 +23,15 @@ require_once('../../class2.php');
 require_once('includes/config.php'); 
 include_once('includes/ipn_functions.php'); 
 include_once("easyshop_class.php");
-require_once(HEADERF); 
+require_once(HEADERF);
 
-// Get language file (assume that the English language file is always present)
-include_lan(e_PLUGIN.'easyshop/languages/'.e_LANGUAGE.'.php');
+e107::lan('easyshop', NULL);
+
 refresh_cart();
 
-  $sql3 = new db;
-    $sql3 -> db_Select(DB_TABLE_SHOP_CURRENCY, "*", "currency_active=2");
-    while($row3 = $sql3-> db_Fetch()){
+  $sql3= e107::getDb('3');
+    $sql3 -> select(DB_TABLE_SHOP_CURRENCY, "*", "currency_active=2");
+    while($row3 = $sql3-> fetch()){
         $unicode_character = $row3['unicode_character'];
         $paypal_currency_code = $row3['paypal_currency_code'];
     }

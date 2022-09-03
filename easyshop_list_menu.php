@@ -14,46 +14,46 @@
 */
 if (!defined('e107_INIT')) { exit(); }
 
-// Get language file (assume that the English language file is always present)
-include_lan(e_PLUGIN.'easyshop/languages/'.e_LANGUAGE.'.php');
+e107::lan("easyshop", NULL);
+
 // include define tables info
 require_once(e_PLUGIN."easyshop/includes/config.php"); // It's important to point to the correct plugin folder!
 
-$sql = new db;
+$sql = e107::getDb();
 // Count active categories
-$active_cat_count = $sql->db_Count(DB_TABLE_SHOP_ITEM_CATEGORIES, "(*)", "WHERE category_active_status = '2' AND (category_class IN (".USERCLASS_LIST.")) ");
+$active_cat_count = $sql->count(DB_TABLE_SHOP_ITEM_CATEGORIES, "(*)", "WHERE category_active_status = '2' AND (category_class IN (".USERCLASS_LIST.")) ");
 // Count active main categories
-$active_main_count = $sql->db_Count(DB_TABLE_SHOP_MAIN_CATEGORIES, "(*)", "WHERE main_category_active_status = '2' ");
+$active_main_count = $sql->count(DB_TABLE_SHOP_MAIN_CATEGORIES, "(*)", "WHERE main_category_active_status = '2' ");
 
 $l_text .= "<table>";
 
 // Select all active main categories
 if ($active_main_count > 0) {
-  $sql0 = new db;
-  $sql0 -> db_Select(DB_TABLE_SHOP_MAIN_CATEGORIES, "*", "main_category_active_status = '2'");
-  while($row0 = $sql0-> db_Fetch()){
+  $sql0 = e107::getDb();
+  $sql0 -> select(DB_TABLE_SHOP_MAIN_CATEGORIES, "*", "main_category_active_status = '2'");
+  while($row0 = $sql0-> fetch()){
     $main_category_id    = $row0['main_category_id'];
   	$main_category_name  = $row0['main_category_name'];
 
-    $sql10 = new db; // Count all active categories of fetched main category
-    $active_cat_count = $sql10->db_Count(DB_TABLE_SHOP_ITEM_CATEGORIES, "(*)", "WHERE category_active_status = '2' AND category_main_id = '$main_category_id' AND (category_class IN (".USERCLASS_LIST.")) ");
+    $sql10 = e107::getDb('10'); // Count all active categories of fetched main category
+    $active_cat_count = $sql10->count(DB_TABLE_SHOP_ITEM_CATEGORIES, "(*)", "WHERE category_active_status = '2' AND category_main_id = '$main_category_id' AND (category_class IN (".USERCLASS_LIST.")) ");
     $l_text .= "<tr><td><a href='".e_PLUGIN."easyshop/easyshop.php?mcat.$main_category_id'><b>".$main_category_name."</b></a> ($active_cat_count)</td></tr>";
 
     // Select all active categories of the fetched main category
-    $sql1 = new db;
-    $sql1 -> db_Select(DB_TABLE_SHOP_ITEM_CATEGORIES, "*", "category_active_status = '2' AND category_main_id='".$main_category_id."'  AND (category_class IN (".USERCLASS_LIST.")) " );
-    while($row1 = $sql1-> db_Fetch()){
+    $sql1 = e107::getDb('1');
+    $sql1 -> select(DB_TABLE_SHOP_ITEM_CATEGORIES, "*", "category_active_status = '2' AND category_main_id='".$main_category_id."'  AND (category_class IN (".USERCLASS_LIST.")) " );
+    while($row1 = $sql1-> fetch()){
       $category_id    = $row1['category_id'];
     	$category_name  = $row1['category_name'];
 
-      $sql2 = new db; // Count all active products of the fetched category
-      $active_prod_count = $sql2->db_Count(DB_TABLE_SHOP_ITEMS, "(*)", "WHERE item_active_status = '2' AND category_id=$category_id");
+      $sql2= e107::getDb('2'); // Count all active products of the fetched category
+      $active_prod_count = $sql2->count(DB_TABLE_SHOP_ITEMS, "(*)", "WHERE item_active_status = '2' AND category_id=$category_id");
      	$l_text .= "<tr><td>&nbsp;&nbsp;<a href='".e_PLUGIN."easyshop/easyshop.php?cat.$category_id'><b>".$category_name."</b></a> ($active_prod_count)</td></tr>";
 
       $l_text .= "<tr><td><ul>";
-    	$sql3 = new db; // Select all active products of the fetched category
-      $sql3 -> db_Select(DB_TABLE_SHOP_ITEMS, "*", "item_active_status = '2' AND category_id=$category_id ORDER BY item_order");
-      while($row3 = $sql3-> db_Fetch()){
+    	$sql3= e107::getDb('3'); // Select all active products of the fetched category
+      $sql3 -> select(DB_TABLE_SHOP_ITEMS, "*", "item_active_status = '2' AND category_id=$category_id ORDER BY item_order");
+      while($row3 = $sql3-> fetch()){
       	$item_id          = $row3['item_id'];
       	$item_name        = $row3['item_name'];
 
@@ -65,20 +65,20 @@ if ($active_main_count > 0) {
 } // End of if active main categories count > 0
 
 // Select all active categories without main category  (Remain backwards compatible with EasyShop 1.2 AND main category is not mandatory)
-$sql1 = new db;
-$sql1 -> db_Select(DB_TABLE_SHOP_ITEM_CATEGORIES, "*", "category_active_status = '2' AND category_main_id='' AND (category_class IN (".USERCLASS_LIST.")) " );
-while($row1 = $sql1-> db_Fetch()){
+$sql1 = e107::getDb('1');
+$sql1 -> select(DB_TABLE_SHOP_ITEM_CATEGORIES, "*", "category_active_status = '2' AND category_main_id='' AND (category_class IN (".USERCLASS_LIST.")) " );
+while($row1 = $sql1-> fetch()){
   $category_id    = $row1['category_id'];
 	$category_name  = $row1['category_name'];
 
-  $sql2 = new db; // Count all active products of the fetched category
-  $active_prod_count = $sql2->db_Count(DB_TABLE_SHOP_ITEMS, "(*)", "WHERE item_active_status = '2' AND category_id=$category_id");
+  $sql2= e107::getDb('2'); // Count all active products of the fetched category
+  $active_prod_count = $sql2->count(DB_TABLE_SHOP_ITEMS, "(*)", "WHERE item_active_status = '2' AND category_id=$category_id");
  	$l_text .= "<tr><td>&nbsp;&nbsp;<a href='".e_PLUGIN."easyshop/easyshop.php?cat.$category_id'><b>".$category_name."</b></a> ($active_prod_count)</td></tr>";
 
   ($active_prod_count>0)?($l_text .= "<tr><td><ul>"):""; // For valid XHTML 1.1
-	$sql3 = new db; // Select all active products of the fetched category
-  $sql3 -> db_Select(DB_TABLE_SHOP_ITEMS, "*", "item_active_status = '2' AND category_id=$category_id ORDER BY item_order");
-  while($row3 = $sql3-> db_Fetch()){
+	$sql3= e107::getDb('3'); // Select all active products of the fetched category
+  $sql3 -> select(DB_TABLE_SHOP_ITEMS, "*", "item_active_status = '2' AND category_id=$category_id ORDER BY item_order");
+  while($row3 = $sql3-> fetch()){
   	$item_id          = $row3['item_id'];
   	$item_name        = $row3['item_name'];
 

@@ -26,8 +26,7 @@ require_once('easyshop_class.php');
 // Include auth.php rather than header.php ensures an admin user is logged in
 require_once(e_ADMIN.'auth.php');
 
-// Get language file (assume that the English language file is always present)
-include_lan(e_PLUGIN.'easyshop/languages/'.e_LANGUAGE.'.php');
+e107::lan("easyshop", NULL);
 
 // Set the active menu option for admin_menu.php
 $pageid = 'admin_menu_98';

@@ -23,8 +23,7 @@ if ( ! getperms('P')) { header('location:'.e_BASE.'index.php'); exit(); }
 // Include auth.php rather than header.php ensures an admin user is logged in
 require_once(e_ADMIN.'auth.php');
 
-// Get language file (assume that the English language file is always present)
-include_lan(e_PLUGIN.'easyshop/languages/'.e_LANGUAGE.'.php');
+e107::lan("easyshop", NULL);
 
 require_once('includes/config.php');
 // IPN addition
@@ -33,9 +32,15 @@ include_once('includes/ipn_functions.php');
 // Set the active menu option for admin_menu.php
 $pageid = 'admin_menu_06';
 
-$sql = new db;
+$sql = e107::getDb();
 // Wrap the shop monitor page in a table
-$text ="<table border='0' width='95%' cellpadding='3'>";
+$text = "<table border='0' width='95%' cellpadding='3'>
+<style>
+td.forumheader {
+color: white;
+width: 50%;
+}
+</style>";
 $text .= "<tr>
 				<td valign='top' align='left' width='45%'>
 					<center>
@@ -53,7 +58,7 @@ $text .= "<tr>
 				</td>
 				<td class='forumheader2'>";
 // Count active Product Main Categories
-$text .= $sql->db_Count(DB_TABLE_SHOP_MAIN_CATEGORIES, "(*)", "WHERE main_category_active_status = '2'");
+$text .= $sql->count(DB_TABLE_SHOP_MAIN_CATEGORIES, "(*)", "WHERE main_category_active_status = '2'");
 $text .="</td>
 			</tr>";
 
@@ -64,7 +69,7 @@ $text .= "<tr>
 				</td>
 				<td class='forumheader2'>";
 // Count inactive Product Categories
-$text .= $sql->db_Count(DB_TABLE_SHOP_MAIN_CATEGORIES, "(*)", "WHERE main_category_active_status = '1'");
+$text .= $sql->count(DB_TABLE_SHOP_MAIN_CATEGORIES, "(*)", "WHERE main_category_active_status = '1'");
 $text .="</td>
 			</tr>";
 
@@ -75,7 +80,7 @@ $text .= "<tr>
 				</td>
 				<td class='forumheader2'>";
 // Count active Product Categories
-$text .= $sql->db_Count(DB_TABLE_SHOP_ITEM_CATEGORIES, "(*)", "WHERE category_active_status = '2'");
+$text .= $sql->count(DB_TABLE_SHOP_ITEM_CATEGORIES, "(*)", "WHERE category_active_status = '2'");
 $text .="</td>
 			</tr>";
 
@@ -86,7 +91,7 @@ $text .= "<tr>
 				</td>
 				<td class='forumheader2'>";
 // Count active Product Categories without Main Category
-$text .= $sql -> db_Count(DB_TABLE_SHOP_ITEM_CATEGORIES, "(*)", "WHERE category_active_status = 2 AND category_main_id= ''");
+$text .= $sql -> count(DB_TABLE_SHOP_ITEM_CATEGORIES, "(*)", "WHERE category_active_status = 2 AND category_main_id= ''");
 $text .="</td>
 			</tr>";
 
@@ -97,7 +102,7 @@ $text .= "<tr>
 				</td>
 				<td class='forumheader2'>";
 // Count inactive Product Categories
-$text .= $sql->db_Count(DB_TABLE_SHOP_ITEM_CATEGORIES, "(*)", "WHERE category_active_status = '1'");
+$text .= $sql->count(DB_TABLE_SHOP_ITEM_CATEGORIES, "(*)", "WHERE category_active_status = '1'");
 $text .="</td>
 			</tr>";
 
@@ -108,7 +113,7 @@ $text .= "<tr>
 				</td>
 				<td class='forumheader2'>";
 // Count active products
-$prod_count = $sql->db_Count(DB_TABLE_SHOP_ITEMS, "(*)", "WHERE item_active_status = '2'");
+$prod_count = $sql->count(DB_TABLE_SHOP_ITEMS, "(*)", "WHERE item_active_status = '2'");
 // If active product count is zero than display error message
 if(!$prod_count){$text .= "<a href='admin_config.php'>".EASYSHOP_MONITOR_03."</a>";}
 else { $text .= $prod_count;}
@@ -122,7 +127,7 @@ $text .= "<tr>
 				</td>
 				<td class='forumheader2'>";
 // Count active products with discounts
-$prod_discount_count = $sql->db_Count(DB_TABLE_SHOP_ITEMS, "(*)", "WHERE item_active_status = '2' AND prod_discount_id > '0'");
+$prod_discount_count = $sql->count(DB_TABLE_SHOP_ITEMS, "(*)", "WHERE item_active_status = '2' AND prod_discount_id > '0'");
 // If active product count with discounts is zero than display NONE
 if(!$prod_discount_count){$text .= EASYSHOP_MONITOR_18;}
 else { $text .= $prod_discount_count;}
@@ -136,7 +141,7 @@ $text .= "<tr>
 				</td>
 				<td class='forumheader2'>";
 // Count active products with properties
-$prod_property_count = $sql->db_Count(DB_TABLE_SHOP_ITEMS, "(*)", "WHERE item_active_status = '2' AND (prod_prop_1_id > '0' OR prod_prop_2_id > '0' OR prod_prop_3_id > '0' OR prod_prop_4_id > '0' OR prod_prop_5_id > '0')");
+$prod_property_count = $sql->count(DB_TABLE_SHOP_ITEMS, "(*)", "WHERE item_active_status = '2' AND (prod_prop_1_id > '0' OR prod_prop_2_id > '0' OR prod_prop_3_id > '0' OR prod_prop_4_id > '0' OR prod_prop_5_id > '0')");
 // If active product count with property is zero than display NONE
 if(!$prod_property_count){$text .= EASYSHOP_MONITOR_18;}
 else { $text .= $prod_property_count;}
@@ -150,7 +155,7 @@ $text .= "<tr>
 				</td>
 				<td class='forumheader2'>";
 // Count inactive products
-$text .= $sql->db_Count(DB_TABLE_SHOP_ITEMS, "(*)", "WHERE item_active_status = '1'");
+$text .= $sql->count(DB_TABLE_SHOP_ITEMS, "(*)", "WHERE item_active_status = '1'");
 $text .="</td>
 			</tr>";
 
@@ -161,7 +166,7 @@ $text .= "<tr>
 				</td>
 				<td class='forumheader2'>";
 // Count out-of-stock products
-$text .= $sql->db_Count(DB_TABLE_SHOP_ITEMS, "(*)", "WHERE item_out_of_stock = '2'");
+$text .= $sql->count(DB_TABLE_SHOP_ITEMS, "(*)", "WHERE item_out_of_stock = '2'");
 $text .="</td>
 			</tr>";
 

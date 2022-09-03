@@ -28,8 +28,8 @@ if ( ! getperms('P')) { header('location:'.e_BASE.'index.php'); exit(); }
 // Include auth.php rather than header.php ensures an admin user is logged in
 require_once(e_ADMIN.'auth.php');
 
-// Get language file (assume that the English language file is always present)
-include_lan(e_PLUGIN.'easyshop/languages/'.e_LANGUAGE.'.php');
+e107::lan("easyshop", NULL);
+
 require_once('includes/config.php');
 
 // Load the easyshop class
@@ -53,16 +53,16 @@ require_once(e_HANDLER.'userclass_class.php');
 require_once(e_HANDLER.'file_class.php');
 
 // Define actual currency and position of currency character once
-$sql = new db;
-$sql -> db_Select(DB_TABLE_SHOP_CURRENCY, "*", "currency_active=2");
-if ($row = $sql-> db_Fetch()){
+$sql = e107::getDb();
+$sql -> select(DB_TABLE_SHOP_CURRENCY, "*", "currency_active=2");
+if ($row = $sql-> fetch()){
 	$unicode_character = $row['unicode_character'];
 	$paypal_currency_code = $row['paypal_currency_code'];
 }
 
 // Get some settings from preference table
-$sql -> db_Select(DB_TABLE_SHOP_PREFERENCES, "*", "store_id=1");
-if ($row = $sql-> db_Fetch()){
+$sql -> select(DB_TABLE_SHOP_PREFERENCES, "*", "store_id=1");
+if ($row = $sql-> fetch()){
     $set_currency_behind = $row['set_currency_behind'];
     $print_discount_icons = $row['print_discount_icons'];
 }
@@ -156,7 +156,7 @@ if (isset($_POST['update_disc']) or isset($_POST['create_new'])) { // Update the
   }
   
   if (isset($_POST['create_new'])) { // Create a new record in Discounts table
-    $sql -> db_Insert(easyshop_discount,
+    $sql -> db_Insert(DB_TABLE_SHOP_DISCOUNT,
     "0,
     '".$tp->toDB($_POST['discount_name'])."',
 		'".$tp->toDB($_POST['discount_class'])."',
@@ -170,7 +170,7 @@ if (isset($_POST['update_disc']) or isset($_POST['create_new'])) { // Update the
   }
   if (isset($_POST['update_disc'])) { // Update the existing record in Discounts table
     // Actual update
-    $sql -> db_Update(easyshop_discount,
+    $sql -> db_Update(DB_TABLE_SHOP_DISCOUNT,
     "discount_name='".$tp->toDB($_POST['discount_name'])."',
 		discount_class='".intval($tp->toDB($_POST['discount_class']))."',
 		discount_flag='".$tp->toDB($_POST['discount_flag'])."',
@@ -220,9 +220,9 @@ if ($action == 'delete') {
 if ($action == 'delete_final') {
 	// Variable delete_final is set if answer equals Yes
     // Delete discount from discount table
-    $sql -> db_Delete(easyshop_discount, "discount_id=$action_id");
+    $sql -> db_Delete(DB_TABLE_SHOP_DISCOUNT, "discount_id=$action_id");
     // Delete discount from product table fields
-    $sql->db_Update(easyshop_items, "prod_discount_id='' WHERE prod_discount_id=$action_id");
+    $sql->db_Update(DB_TABLE_SHOP_ITEMS, "prod_discount_id='' WHERE prod_discount_id=$action_id");
     header("Location: admin_discounts.php");
 }
 
@@ -231,10 +231,10 @@ if ($action == 'delete_final') {
 // ----------------------------------------------------------------------------+
 if ($action == 'edit') {
 	$arg="SELECT *
-        FROM #easyshop_discount
+        FROM #DB_TABLE_SHOP_DISCOUNT
         WHERE discount_id = $action_id";
-  $sql->db_Select_gen($arg,false);
-	if($row = $sql-> db_Fetch()){
+  $sql->gen($arg,false);
+	if($row = $sql-> fetch()){
     $discount_id = $row['discount_id'];
     $discount_name = $row['discount_name'];
     $discount_class = $row['discount_class'];
@@ -284,7 +284,7 @@ if ($action == 'edit') {
   // --------------------------------------------------------------------------+
 
   // Determine if there are no discounts
-	if($sql -> db_Count(easyshop_discount) > 0) {
+	if($sql -> count(DB_TABLE_SHOP_DISCOUNT) > 0) {
 		$no_discounts = 1;
 	}
 
@@ -320,9 +320,9 @@ if ($action == 'edit') {
 									<td class='fcaption'><center><b>".EASYSHOP_ADMIN_DISC_14."</b></center></td>
 								</tr>";
 								// Select the discounts in the alphabetical order
-								$sql -> db_Select(easyshop_discount, "*", "ORDER BY discount_name", "no-where");
+								$sql -> select(DB_TABLE_SHOP_DISCOUNT, "*", "ORDER BY discount_name", "no-where");
 								// While there are records available; fill the rows
-								while($row = $sql-> db_Fetch()){
+								while($row = $sql-> fetch()){
                   // Hide date integer values 0
 								  $discount_valid_from = ($row['discount_valid_from'] > 0) ? date("Y/m/d", $row['discount_valid_from']) : "";
 								  $discount_valid_till = ($row['discount_valid_till'] > 0) ? date("Y/m/d", $row['discount_valid_till']) : "";

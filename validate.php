@@ -21,8 +21,8 @@ require_once('../../class2.php');
 require_once(HEADERF);
 require_once('includes/config.php');
 
-// Get language file (assume that the English language file is always present)
-include_lan(e_PLUGIN.'easyshop/languages/'.e_LANGUAGE.'.php');
+e107::lan("easyshop", NULL);
+
 // Read the post from PayPal system and add 'cmd'
 $req = 'cmd=_notify-validate';
 require_once('includes/ipn_functions.php');
@@ -36,9 +36,9 @@ $log = fopen("ipn.log", "a");
 fwrite($log, "\n\nipn - " . gmstrftime ("%b %d %Y %H:%M:%S", time()));
 
 // Retrieve the sandbox setting from the shop preferences
-$sql = new db;
-$sql -> db_Select(DB_TABLE_SHOP_PREFERENCES, "*", "store_id=1");
-if ($row = $sql-> db_Fetch()) {
+$sql = e107::getDb();
+$sql -> select(DB_TABLE_SHOP_PREFERENCES, "*", "store_id=1");
+if ($row = $sql-> fetch()) {
 	$sandbox = $row['sandbox'];
 	$paypal_primary_email = $row['paypal_primary_email'];
 }
@@ -68,13 +68,13 @@ if (!$fp) {
 		{
 			fwrite($log, "\n ".EASYSHOP_VAL_05); // Paypal response VERIFIED
 			// Loop through the $_POST array and store all vars to arrays $fielddata and $itemdata.
-			$sql = new db;
-			$sql2 = new db;
+			$sql = e107::getDb();
+			$sql2= e107::getDb('2');
 			$fielddata = array();
 			$itemdata = array();
 			foreach($_POST as $key => $value){ // Arrange fields and items into seperate arrays
 				$value = $tp -> toDB($value);
-				if (ereg( "[0-9]{1,3}$",$key)) { // Any item with one or more digits is an item
+				if (preg_match("~[0-9]{1,3}$~",$key)) { // Any item with one or more digits is an item
 					$itemdata[$key] = $value;    // not sure how handling2 will be received !!
 				} else {                         // Else it's a generic field for the transaction
 					$fielddata[$key] = $value;

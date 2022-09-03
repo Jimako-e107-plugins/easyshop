@@ -25,9 +25,10 @@ require_once(e_ADMIN.'auth.php');
 // Include ren_help for display_help (while showing BBcodes)
 require_once(e_HANDLER.'ren_help.php');
 
-// Get language file (assume that the English language file is always present)
-include_lan(e_PLUGIN.'easyshop/languages/'.e_LANGUAGE.'.php');
+e107::lan("easyshop", NULL);
+
 require_once('includes/config.php');
+$sql = e107::getDb();
 
 // Set the active menu option for admin_menu.php
 $pageid = 'admin_menu_02';
@@ -151,9 +152,9 @@ if ($_POST['create_main_category'] == '1') {
 
 
 // Build array with all images to choose from
-$sql = new db;
-$sql->db_Select(DB_TABLE_SHOP_PREFERENCES);
-while($row = $sql-> db_Fetch()){
+$sql = e107::getDb();
+$sql->select(DB_TABLE_SHOP_PREFERENCES);
+while($row = $sql-> fetch()){
     $store_image_path = $row['store_image_path'];
     $icon_width = $row['icon_width'];
 }
@@ -168,8 +169,8 @@ if ($icon_width == '' OR $icon_width < 1) {$icon_width = 16;} // Default of icon
 if ($_GET['edit_main_category'] == 1) {
 	
 	//*
-	$sql -> db_Select(DB_TABLE_SHOP_MAIN_CATEGORIES, "*", "main_category_id=".intval($_GET['main_category_id']));
-	while($row = $sql-> db_Fetch()){
+	$sql -> select(DB_TABLE_SHOP_MAIN_CATEGORIES, "*", "main_category_id=".intval($_GET['main_category_id']));
+	while($row = $sql-> fetch()){
 	    $main_category_id = $row['main_category_id'];
 	    $main_category_name = $row['main_category_name'];
     	$main_category_description = $row['main_category_description'];
@@ -254,20 +255,20 @@ if ($_GET['edit_main_category'] == 1) {
   // Initial screen with Maintain Categories
 
   // Determine if there are no categories
-	if($sql -> db_Count(DB_TABLE_SHOP_MAIN_CATEGORIES) > 0) {
+	if($sql -> count(DB_TABLE_SHOP_MAIN_CATEGORIES) > 0) {
 		$no_categories = 1;
 	}
 
   // Check if there are active categories
   // active_status = 1 --> active 'off'
   // active_status = 2 --> active 'on'
-	if($sql -> db_Count(DB_TABLE_SHOP_MAIN_CATEGORIES, '(*)', 'WHERE main_category_active_status = 2') == 0) {
+	if($sql -> count(DB_TABLE_SHOP_MAIN_CATEGORIES, '(*)', 'WHERE main_category_active_status = 2') == 0) {
 		$no_active_categories = 1;
 	}
 	
   //  Retrieve the records from the database
-	$sql -> db_Select(DB_TABLE_SHOP_MAIN_CATEGORIES);
-	while($row = $sql-> db_Fetch()){
+	$sql -> select(DB_TABLE_SHOP_MAIN_CATEGORIES);
+	while($row = $sql-> fetch()){
 		$main_category_id = $row['main_category_id'];
 		$main_category_name = $row['main_category_name'];
 		$main_category_description = $row['main_category_description'];
@@ -276,8 +277,8 @@ if ($_GET['edit_main_category'] == 1) {
 		$main_category_order = $row['main_category_order'];
 	}
 	
-	$sql -> db_Select(DB_TABLE_SHOP_PREFERENCES);
-	while($row = $sql-> db_Fetch()){
+	$sql -> select(DB_TABLE_SHOP_PREFERENCES);
+	while($row = $sql-> fetch()){
 		$store_name = $row['store_name'];
 		$store_address_1 = $row['store_address_1'];
 		$store_address_2 = $row['store_address_2'];
@@ -337,11 +338,11 @@ if ($_GET['edit_main_category'] == 1) {
 								</tr>";
 								// While there are records available; fill the rows to display them all in the userdefined order
 								// First query: select the categories
-								$sql -> db_Select(DB_TABLE_SHOP_MAIN_CATEGORIES, "*", "ORDER BY main_category_order", "no-where");
-								while($row = $sql-> db_Fetch()){
+								$sql -> select(DB_TABLE_SHOP_MAIN_CATEGORIES, "*", "ORDER BY main_category_order", "no-where");
+								while($row = $sql-> fetch()){
                   // Second query: Count the number of products in the category
-                  $sql2 = new db;
-									$prod_cat_count = $sql2 -> db_Count(DB_TABLE_SHOP_ITEMS, "(*)", "WHERE main_category_id='".$row['main_category_id']."'");
+                  $sql2= e107::getDb('2');
+									$prod_cat_count = $sql2 -> count(DB_TABLE_SHOP_ITEMS, "(*)", "WHERE main_category_id='".$row['main_category_id']."'");
 
 									$text .= "
 									<tr>
@@ -372,8 +373,8 @@ if ($_GET['edit_main_category'] == 1) {
 											<div style='text-align:center;'>
 						                        <select class='tbox' name='main_category_order[]'>";
             						            // Third query: Build the selection list with order numbers
-						                        $sql3 = new db;
-						                        $num_rows = $sql3 -> db_Count(DB_TABLE_SHOP_MAIN_CATEGORIES, "(*)");
+						                        $sql3= e107::getDb('3');
+						                        $num_rows = $sql3 -> count(DB_TABLE_SHOP_MAIN_CATEGORIES, "(*)");
 						                        $count = 1;
 						                        while ($count <= $num_rows) {
 						                            if ($row['main_category_order'] == $count) {
@@ -437,7 +438,7 @@ if ($_GET['edit_main_category'] == 1) {
 						<br />";
 
             if ($no_active_categories == 1) {
-							$text .= "<img src='".e_IMAGE."admin_images/docs_16.png' title='' alt='' /> ".EASYSHOP_MCAT_20;
+							$text .= "<img src='".e_PLUGIN."easyshop/admin_images/docs_16.png' title='' alt='' /> ".EASYSHOP_MCAT_20;
             }
 						
 					}

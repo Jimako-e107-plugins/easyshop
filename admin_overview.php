@@ -27,8 +27,8 @@ require_once(e_ADMIN.'auth.php');
 // Include ren_help for display_help (while showing BBcodes)
 require_once(e_HANDLER.'ren_help.php');
 
-// Get language file (assume that the English language file is always present)
-include_lan(e_PLUGIN.'easyshop/languages/'.e_LANGUAGE.'.php');
+e107::lan("easyshop", NULL);
+
 // Set the active menu option for admin_menu.php
 $pageid = 'admin_menu_09';
 

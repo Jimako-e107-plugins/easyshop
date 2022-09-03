@@ -30,9 +30,10 @@ require_once(e_HANDLER.'form_handler.php');
 require_once(e_HANDLER.'userclass_class.php');
 require_once(e_HANDLER.'file_class.php');
 
-// Get language file (assume that the English language file is always present)
-include_lan(e_PLUGIN.'easyshop/languages/'.e_LANGUAGE.'.php');
+e107::lan("easyshop", NULL);
+
 require_once('includes/config.php');
+$sql = e107::getDb();
 
 // Set the active menu option for admin_menu.php
 $pageid = 'admin_menu_03';
@@ -159,9 +160,9 @@ if ($_POST['create_category'] == '1') {
 
 // START MAIN ADMIN CATEGORIES
 // Build array with all images to choose from
-$sql = new db;
-$sql->db_Select(DB_TABLE_SHOP_PREFERENCES);
-while($row = $sql-> db_Fetch()){
+$sql = e107::getDb();
+$sql->select(DB_TABLE_SHOP_PREFERENCES);
+while($row = $sql-> fetch()){
     $store_image_path = $row['store_image_path'];
     $icon_width = $row['icon_width'];
 }
@@ -173,14 +174,14 @@ if($image_array = $fl->get_files(e_PLUGIN."easyshop/".$store_image_path, ".gif|.
 if ($icon_width == '' OR $icon_width < 1) {$icon_width = 16;} // Default of icon width is 16 pixels width
 
 // Count the active main activities
-$main_cat_count = $sql->db_Count(DB_TABLE_SHOP_MAIN_CATEGORIES, "(*)", "WHERE main_category_active_status = '2'");
+$main_cat_count = $sql->count(DB_TABLE_SHOP_MAIN_CATEGORIES, "(*)", "WHERE main_category_active_status = '2'");
 
 // Edit or Maintain a single category
 if ($_GET['edit_category'] == 1) {
 	
 	//*
-	$sql -> db_Select(DB_TABLE_SHOP_ITEM_CATEGORIES, "*", "category_id=".intval($_GET['category_id']));
-	while($row = $sql-> db_Fetch()){
+	$sql -> select(DB_TABLE_SHOP_ITEM_CATEGORIES, "*", "category_id=".intval($_GET['category_id']));
+	while($row = $sql-> fetch()){
 	    $category_id = $row['category_id'];
 	    $category_name = $row['category_name'];
     	$category_description = $row['category_description'];
@@ -200,7 +201,7 @@ if ($_GET['edit_category'] == 1) {
 					<table class='table'>";
 
   // Only display Main Category selection if there are active Main Categories
-  if ($sql->db_Count(DB_TABLE_SHOP_MAIN_CATEGORIES, "(*)", "WHERE main_category_active_status = '2'") > 0) {
+  if ($sql->count(DB_TABLE_SHOP_MAIN_CATEGORIES, "(*)", "WHERE main_category_active_status = '2'") > 0) {
 	$text .= "
 						<tr>
 							<td>
@@ -208,11 +209,11 @@ if ($_GET['edit_category'] == 1) {
 							</td>
 							<td>
 								<select class='tbox' name='category_main_id'>";
-		                        $sql2 = new db;
-		                        $sql2 -> db_Select(DB_TABLE_SHOP_MAIN_CATEGORIES, "*", "WHERE main_category_active_status = '2' ORDER BY main_category_order", false); // Select only active main categories
+		                        $sql2= e107::getDb('2');
+		                        $sql2 -> select(DB_TABLE_SHOP_MAIN_CATEGORIES, "*", "WHERE main_category_active_status = '2' ORDER BY main_category_order", false); // Select only active main categories
 		                        // Add a blank option too: main category is not mandatory
                       			$text .= "<option value='' selected='selected'></option>";
-		                        while ($row2 = $sql2->db_Fetch()) {
+		                        while ($row2 = $sql2->fetch()) {
 		                        	if ($row2['main_category_id'] == $category_main_id) {
 	                        			$text .= "
 		                                <option value='".$row2['main_category_id']."' selected='selected'>".$row2['main_category_name']."</option>";
@@ -319,19 +320,19 @@ if ($_GET['edit_category'] == 1) {
   // Initial screen with Maintain Categories
 
   // Determine if there are no categories
-	if($sql -> db_Count(DB_TABLE_SHOP_ITEM_CATEGORIES) > 0) {
+	if($sql -> count(DB_TABLE_SHOP_ITEM_CATEGORIES) > 0) {
 		$no_categories = 1;
 	}
 
   // Check if there are active categories
   // active_status = 1 --> active 'off'
   // active_status = 2 --> active 'on'
-	if($sql -> db_Count(DB_TABLE_SHOP_ITEM_CATEGORIES, '(*)', 'WHERE category_active_status = 2') == 0) {
+	if($sql -> count(DB_TABLE_SHOP_ITEM_CATEGORIES, '(*)', 'WHERE category_active_status = 2') == 0) {
 		$no_active_categories = 1;
 	}
 	
-	$sql -> db_Select(DB_TABLE_SHOP_PREFERENCES);
-	while($row = $sql-> db_Fetch()){
+	$sql -> select(DB_TABLE_SHOP_PREFERENCES);
+	while($row = $sql-> fetch()){
 		$store_name = $row['store_name'];
 		$store_address_1 = $row['store_address_1'];
 		$store_address_2 = $row['store_address_2'];
@@ -404,11 +405,11 @@ if ($_GET['edit_category'] == 1) {
 								</tr>";
 								// While there are records available; fill the rows to display them all in the userdefined order
 								// First query: select the categories
-								$sql -> db_Select(DB_TABLE_SHOP_ITEM_CATEGORIES, "*", "ORDER BY category_order", "no-where");
-								while($row = $sql-> db_Fetch()){
+								$sql -> select(DB_TABLE_SHOP_ITEM_CATEGORIES, "*", "ORDER BY category_order", "no-where");
+								while($row = $sql-> fetch()){
                   // Second query: Count the number of products in the category
-                  $sql2 = new db;
-									$prod_cat_count = $sql2 -> db_Count(DB_TABLE_SHOP_ITEMS, "(*)", "WHERE category_id='".$row['category_id']."'");
+                  $sql2= e107::getDb('2');
+									$prod_cat_count = $sql2 -> count(DB_TABLE_SHOP_ITEMS, "(*)", "WHERE category_id='".$row['category_id']."'");
 
 									$text .= "
 									<tr>
@@ -440,9 +441,9 @@ if ($_GET['edit_category'] == 1) {
                     if ($main_cat_count > 0) {
                       // Retrieve Main Category desciption
                       $main_category_name = ""; // Reset to blank for each category
-                      $sql3 = new db;
-                      $sql3 -> db_Select(DB_TABLE_SHOP_MAIN_CATEGORIES, "*", "WHERE main_category_id = ".$row['category_main_id'], false);
-                      while($row3 = $sql3-> db_Fetch()){
+                      $sql3= e107::getDb('3');
+                      $sql3 -> select(DB_TABLE_SHOP_MAIN_CATEGORIES, "*", "WHERE main_category_id = ".$row['category_main_id'], false);
+                      while($row3 = $sql3-> fetch()){
                         $main_category_name = $row3['main_category_name'];
           						}
           						$text .= "<td class='forumheader3'><div style='text-align:center;'>".$main_category_name."</div></td>";
@@ -455,8 +456,8 @@ if ($_GET['edit_category'] == 1) {
 											<div style='text-align:center;'>
 						                        <select class='tbox' name='category_order[]'>";
             						            // Third query: Build the selection list with order numbers
-						                        $sql3 = new db;
-						                        $num_rows = $sql3 -> db_Count(DB_TABLE_SHOP_ITEM_CATEGORIES, "(*)");
+						                        $sql4= e107::getDb('4');
+						                        $num_rows = $sql4 -> count(DB_TABLE_SHOP_ITEM_CATEGORIES, "(*)");
 						                        $count = 1;
 						                        while ($count <= $num_rows) {
 						                            if ($row['category_order'] == $count) {
@@ -527,7 +528,7 @@ if ($_GET['edit_category'] == 1) {
 						<br />";
 
             if ($no_active_categories == 1) {
-							$text .= "<img src='".e_IMAGE."admin_images/docs_16.png' title='' alt='' /> ".EASYSHOP_CAT_20;
+							$text .= "<img src='".e_PLUGIN."easyshop/admin_images/docs_16.png' title='' alt='' /> ".EASYSHOP_CAT_20;
             }
 						
 					}
@@ -554,7 +555,7 @@ if ($_GET['edit_category'] == 1) {
 					";
 
   // Only display Main Category selection if there are active Main Categories
-  if ($sql->db_Count(DB_TABLE_SHOP_MAIN_CATEGORIES, "(*)", "WHERE main_category_active_status = '2'") > 0) {
+  if ($sql->count(DB_TABLE_SHOP_MAIN_CATEGORIES, "(*)", "WHERE main_category_active_status = '2'") > 0) {
 	$text .= "
 						<tr>
 							<td>
@@ -562,10 +563,10 @@ if ($_GET['edit_category'] == 1) {
 							</td>
 							<td>
 								<select class='tbox' name='category_main_id'>";
-		                        $sql2 = new db;
-		                        $sql2 -> db_Select(DB_TABLE_SHOP_MAIN_CATEGORIES, "*", "WHERE main_category_active_status = '2' ORDER BY main_category_order", false); // Select only active main categories
+		                        $sql2= e107::getDb('2');
+		                        $sql2 -> select(DB_TABLE_SHOP_MAIN_CATEGORIES, "*", "WHERE main_category_active_status = '2' ORDER BY main_category_order", false); // Select only active main categories
                       			$text .= "<option value='' selected='selected'></option>"; // Add a blank option too
-		                        while ($row2 = $sql2->db_Fetch()) {
+		                        while ($row2 = $sql2->fetch()) {
 		                        	if ($row2['main_category_id'] == $category_main_id) {
 	                        			$text .= "
 		                                <option value='".$row2['main_category_id']."' selected='selected'>".$row2['main_category_name']."</option>";

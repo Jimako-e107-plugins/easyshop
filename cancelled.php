@@ -16,17 +16,17 @@
 // class2.php is the heart of e107, always include it first to give access to e107 constants and variables
 require_once('../../class2.php');
 
-// Get language file (assume that the English language file is always present)
-include_lan(e_PLUGIN.'easyshop/languages/'.e_LANGUAGE.'.php');
+e107::lan("easyshop", NULL);
+
 // use HEADERF for USER PAGES and e_ADMIN."auth.php" for admin pages
 require_once(HEADERF);
 
 require_once('includes/config.php');
 require_once(e_HANDLER."mail.php");
 
-$sql = new db;
-$sql -> db_Select(DB_TABLE_SHOP_PREFERENCES);
-while($row = $sql-> db_Fetch()){
+$sql = e107::getDb();
+$sql -> select(DB_TABLE_SHOP_PREFERENCES);
+while($row = $sql-> fetch()){
     $store_name = $row['store_name'];
     $store_address_1 = $row['store_address_1'];
     $store_address_2 = $row['store_address_2'];

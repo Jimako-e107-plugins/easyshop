@@ -1,8 +1,9 @@
 <?php
 // check called correctly
 if (!defined('e107_INIT')) { exit(); }
-// get the language file for your plugin
-include_lan(e_PLUGIN . "easyshop/languages/" . e_LANGUAGE . ".php");
+
+e107::lan('easyshop', NULL);
+
 // The title of the plugin to be displayed in the main admin search page
 $comments_title = "EasyShop";
 // the id that is used to identify comments for this plugin in the e107_comments table

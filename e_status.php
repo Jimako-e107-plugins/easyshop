@@ -13,8 +13,9 @@
 +------------------------------------------------------------------------------+
 */
 if (!defined('e107_INIT')) { exit(); }
-// Get language file (assume that the English language file is always present)
-include_lan(e_PLUGIN.'easyshop/languages/'.e_LANGUAGE.'.php');
+
+e107::lan("easyshop", NULL);
+
 require_once('includes/ipn_functions.php');
 
 // Put shop preferences into an array
@@ -24,7 +25,7 @@ $shoppref = shop_pref();
 $shop_year = intval(date("Y", time()));
 
 if ($shoppref['enable_ipn'] == 2) { // Only display status when PayPal IPN is enabled
-  $count = $sql -> db_Count("easyshop_ipn_orders", "(*)", "WHERE YEAR(FROM_UNIXTIME(phptimestamp))= $shop_year AND payment_status=\"Completed\" ");
+  $count = e107::getDb() -> count("easyshop_ipn_orders", "(*)", "WHERE YEAR(FROM_UNIXTIME(phptimestamp))= $shop_year AND payment_status=\"Completed\" ");
   if ($count == "" || $count == NULL){
     $count = 0;
   }

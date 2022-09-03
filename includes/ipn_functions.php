@@ -19,10 +19,10 @@ function shop_pref($action = array())
  if you pass the preference array to this function it will update the database with the provided values (also handy)
 */
 {
-  $sql_pref = new db();
+  $sql_pref = e107::getDb('pref');
   switch ($action) {
     case (!NULL):
-    if ($sql_pref -> db_Update("easyshop_preferences",
+    if ($sql_pref -> update("easyshop_preferences",
      "store_name               = '".$action['store_name']."',
       store_address_1          = '".$action['store_address_1']."',
       store_address_2          = '".$action['store_address_2']."',
@@ -78,8 +78,8 @@ function shop_pref($action = array())
     break;
          
   default:
-    $sql_pref -> db_Select("easyshop_preferences", "*", "store_id=1");
-    if($row = $sql_pref-> db_Fetch()){
+    $sql_pref -> select("easyshop_preferences", "*", "store_id=1");
+    if($row = $sql_pref-> fetch()){
       $shoppref['store_name']               = $row['store_name'];
       $shoppref['store_address_1']          = $row['store_address_1'];
       $shoppref['store_address_2']          = $row['store_address_2'];
@@ -147,10 +147,10 @@ function transaction($action, $itemdata= array(), $fielddata = array(), $payment
         // serializes the items list so it can be stored in a single field in database
         $tempitemdata = serialize($itemdata);
         isset($payment_status)? NULL : $payment_status = "ES_processing";
-        $sqlnew = new db();
+        $sqlnew = e107::getDb('sqlnew');
         // check that phpsessionid AND payment_status is unique to table - !!! if not this is an update .. NOT new
-        if(!$sqlnew -> db_Select("easyshop_ipn_orders","*", "phpsessionid = '".$fielddata['custom']."' AND (payment_status = 'ES_processing' OR payment_status='ES_shopping')")){
-          if($sqlnew -> db_Insert("easyshop_ipn_orders",
+        if(!$sqlnew -> select("easyshop_ipn_orders","*", "phpsessionid = '".$fielddata['custom']."' AND (payment_status = 'ES_processing' OR payment_status='ES_shopping')")){
+          if($sqlnew -> insert("easyshop_ipn_orders",
             array(
                   "mc_gross"         => $fielddata['mc_gross'],
                   "mc_currency"      => $fielddata['mc_currency'],
@@ -180,18 +180,18 @@ function transaction($action, $itemdata= array(), $fielddata = array(), $payment
         }
         break;
     case "update":
-      $sqlupdate = new db();
+      $sqlupdate = e107::getDb('sqlupdate');
       $tempitemdata = serialize($itemdata);
       $payment_status= "ES_processing"; // This will always be the case with an update!!
 	  /// START NEW
 	  // Save the original all_items field as it was at creation
-	  $sqlupdate -> db_Select("easyshop_ipn_orders", "*", "phpsessionid = '".$fielddata['custom']."'AND payment_status ='".$payment_status."'");
-	  if($row = $sqlupdate->db_Fetch()) 
+	  $sqlupdate -> select("easyshop_ipn_orders", "*", "phpsessionid = '".$fielddata['custom']."'AND payment_status ='".$payment_status."'");
+	  if($row = $sqlupdate->fetch()) 
 	  {
 		$current_all_items = $row['all_items'];
 	  }
 	  /// END NEW
-      if($sqlupdate -> db_Update("easyshop_ipn_orders",
+      if($sqlupdate -> update("easyshop_ipn_orders",
                         "
                         receiver_email   = '".$fielddata['receiver_email']."',
                         payment_status   = '".$fielddata['payment_status']."',
@@ -240,8 +240,8 @@ function transaction($action, $itemdata= array(), $fielddata = array(), $payment
           $db_payment_status = ""; // $payment_status not set? fail the db_Delete
       }
       isset($from_time) ? $from_time = " AND phptimestamp <= '".$from_time ."'" :  $from_time ="";
-      $sql_delete = new db();
-      if($sql_delete -> db_Delete("easyshop_ipn_orders", $db_payment_status.$from_time, FALSE)){
+      $sql_delete = e107::getDb('delete');
+      if($sql_delete -> delete("easyshop_ipn_orders", $db_payment_status.$from_time, FALSE)){
           //$sql_delete -> db_Close();
           return TRUE;
       } else {
@@ -251,9 +251,9 @@ function transaction($action, $itemdata= array(), $fielddata = array(), $payment
       break;
     case "FORCE_NEW" :
       $tempitemdata = serialize($itemdata);
-      $sqlforcenew = new db();
+      $sqlforcenew = e107::getDb('forcenew'); 
 
-      if($sqlforcenew -> db_Insert("easyshop_ipn_orders",
+      if($sqlforcenew -> insert("easyshop_ipn_orders",
                 array(
                   "receiver_email"   => $fielddata['receiver_email'],
                   "payment_status"   => $fielddata['payment_status'],
@@ -291,14 +291,14 @@ function transaction($action, $itemdata= array(), $fielddata = array(), $payment
                   }
       break;
     default :
-      $sql_sessionid = new db();
+      $sql_sessionid = e107::getDb('sessionid');
 
       isset($payment_status)? $db_payment_status = "AND payment_status = '".$payment_status."'"
               : $db_payment_status = " AND payment_status = 'ES_processing'";
 
-      if ($sql_sessionid -> db_Select("easyshop_ipn_orders","*","phpsessionid = '".$action."'".$db_payment_status)){
+      if ($sql_sessionid -> select("easyshop_ipn_orders","*","phpsessionid = '".$action."'".$db_payment_status)){
           $transaction = array();
-          while($row =  $sql_sessionid -> db_Fetch()){
+          while($row =  $sql_sessionid -> fetch()){
               foreach ($row as $key => $value) {
                   if(!is_int($key)){
                     $transaction[$key] = $value;
@@ -326,9 +326,9 @@ function report($action = "all", $limit = 5, $from = NULL, $to = NULL, $phpsessi
  $shop_pref = shop_pref();
  $set_currency_behind = $shop_pref['set_currency_behind'];
   // Define actual currency and position of currency character once
-  $sql_rep = new db();
-  $sql_rep -> db_Select(DB_TABLE_SHOP_CURRENCY, "*", "currency_active=2");
-  if ($row = $sql_rep-> db_Fetch()){
+  $sql_rep = e107::getDb('rep');
+  $sql_rep -> select(DB_TABLE_SHOP_CURRENCY, "*", "currency_active=2");
+  if ($row = $sql_rep-> fetch()){
   	$unicode_character = $row['unicode_character'];
   	$paypal_currency_code = $row['paypal_currency_code'];
   }
@@ -356,10 +356,10 @@ function report($action = "all", $limit = 5, $from = NULL, $to = NULL, $phpsessi
  $completed = $processing = $shopping = $escheck = $totals = $rxemail = $dupltxn = $various = 0;
  $arg = "1 " . $action . $phpsessionid . $txn_id . $payer_email . $from . $to . " ORDER BY phptimestamp DESC";
 
- $count_ipn_rows = $sql_rep -> db_Count("easyshop_ipn_orders");
+ $count_ipn_rows = $sql_rep -> count("easyshop_ipn_orders");
  if ($count_ipn_rows > 0) {
-   $sql_rep -> db_Select("easyshop_ipn_orders","*",$arg);
-   while ($row = $sql_rep-> db_Fetch()) {
+   $sql_rep -> select("easyshop_ipn_orders","*",$arg);
+   while ($row = $sql_rep-> fetch()) {
      $row['items'] = unserialize($row['all_items']);
       if(preg_match("/^EScheck_totals_/", $row['payment_status'])){
         $thiscase = "totals";
@@ -564,14 +564,14 @@ function update_stock($txn_id = NULL, $phpsessionid = NULL)
 */
 {
 	global $pref;
-    $sqlcheck = new db();
+    $sqlcheck = e107::getDb();
     $trans_array = transaction($phpsessionid, 0, 0, "Completed");
     $items_array = unserialize($trans_array['all_items']);
     $count = 1;
 	$temp_array = "";   
 	while ($items_array["db_id_".$count]){	
-		if($sqlcheck -> db_Select("easyshop_items","*", "item_id = '".$items_array["db_id_".$count]."'")){
-            while ($row = $sqlcheck -> db_Fetch()){                            
+		if($sqlcheck -> select("easyshop_items","*", "item_id = '".$items_array["db_id_".$count]."'")){
+            while ($row = $sqlcheck -> fetch()){                            
 				if ($row['item_track_stock'] == 2){  // Is this a tracked stock item?
 					if ($row['item_instock'] >= $items_array["quantity".$count]){                               
 						$newstock =  $row['item_instock'] - $items_array["quantity_".$count];
@@ -605,12 +605,12 @@ function update_stock($txn_id = NULL, $phpsessionid = NULL)
 				}
 				if ($row['prod_promo_class'] <> 255 && $row['prod_promo_class'] <> 0 && $trans_array['ipn_user_id'] > 0)
 				{	// Auto promotion of user
-					$sqlcheck2 = new db;
-					$sqlcheck3 = new db;
+					$sqlcheck2 = e107::getDb('check2');
+					$sqlcheck3 = e107::getDb('check3');
 					require_once(e_HANDLER.'userclass_class.php');
 					$promo_class_name = r_userclass_name($row['prod_promo_class']);
-					$sqlcheck2 -> db_Select("user","*","user_id='".$trans_array['ipn_user_id']."'");
-					if ($row2 = $sqlcheck2 -> db_Fetch())
+					$sqlcheck2 -> select("user","*","user_id='".$trans_array['ipn_user_id']."'");
+					if ($row2 = $sqlcheck2 -> fetch())
 					{
 						$user_name = $row2['user_name'];
 						$class_extant = explode(',', $row2['user_class']);
@@ -690,13 +690,13 @@ function refresh_cart()
     session_start();
 
     $items = $_SESSION['shopping_cart'];
-    $sql_refresh = new db();
+    $sql_refresh = e107::getDb('refresh');
 
     $text = $_SESSION['status'] = "";
 
     foreach ($items as $value) {  // In each following step, $value will represent the historic value and $_SESSION will be updated with new value
-            $sql_refresh -> db_Select("easyshop_items", "*", "item_id=".$value['db_id']);
-            $row = $sql_refresh -> db_Fetch();
+            $sql_refresh -> select("easyshop_items", "*", "item_id=".$value['db_id']);
+            $row = $sql_refresh -> fetch();
             
             // If it has property... don't refresh line!
             if (!($row['prod_prop_1_id'] || $row['prod_prop_2_id'] 

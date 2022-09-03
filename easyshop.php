@@ -16,8 +16,7 @@
 // class2.php is the heart of e107, always include it first to give access to e107 constants and variables
 require_once('../../class2.php');
 
-// Get language file (assume that the English language file is always present)
-include_lan(e_PLUGIN.'easyshop/languages/'.e_LANGUAGE.'.php');
+e107::lan("easyshop", NULL);
 
 // use HEADERF for USER PAGES and e_ADMIN."auth.php" for admin pages
 require_once(HEADERF);
@@ -27,6 +26,7 @@ require_once('includes/config.php');
 require_once(e_HANDLER.'comment_class.php'); // Necessary for comments
 $cobj = new comment;
 
+$sql = e107::getDb();
 // Check query
 if(e_QUERY){
 	$tmp = explode(".", e_QUERY);
@@ -35,6 +35,8 @@ if(e_QUERY){
 	$page_id = intval($tmp[2]); // Used for page id of prod
 	unset($tmp);
 }
+
+
 // Extra check
 if (strlen($action) > 0 && !in_array($action, array("edit", "cat", "prodpage", "mcat", "prod", "allcat", "catpage", "blanks", "mcatpage", "datasheet", "quotation")) && $action != "") {
 	// Get out of here: incoming action is not an expected one
@@ -49,16 +51,16 @@ if (strlen($action_id) > 0 && $action_id < 1 && $action_id != "") {
 	exit();
 }
 // Another extra check on page id
-if (strlen($page_id) > 0 && $page_id < 1 && $page_id != "") {
+if (strlen($page_id) > 0 && $page_id < 0 && $page_id != "") {
 	header("Location: ".e_BASE); // Redirect to the home page; in next version a specific error message
 	//$ns -> tablerender ('Error encountered', 'Sorry, unexpected page id '.$page_id.' specified.'); // require('FOOTERF');
 	exit();
 }
-
+ 
 if ($action == 'datasheet')
 {
-	$sql -> db_Select("easyshop_items", "download_datasheet_filename", "item_id=".intval($action_id));
-	if ($row = $sql-> db_Fetch())
+	$sql -> select("easyshop_items", "download_datasheet_filename", "item_id=".intval($action_id));
+	if ($row = $sql-> fetch())
 	{
 		header("Location: ".e_PLUGIN."easyshop/datasheets/".$row['download_datasheet_filename']);
 		exit();
@@ -75,8 +77,8 @@ if ($action == 'quotation')
 	$item_qty = 1; // Fixed quantity
 	$action_id = $_POST['item_id'];
 	// Fetch details per product
-	$sql -> db_Select(DB_TABLE_SHOP_ITEMS, "*", "item_id=".intval($action_id));
-	if ($row = $sql-> db_Fetch()){
+	$sql -> select(DB_TABLE_SHOP_ITEMS, "*", "item_id=".intval($action_id));
+	if ($row = $sql-> fetch()){
 		$item_id = $row['item_id'];
 		$category_id = $row['category_id'];
 		$item_image = $row['item_image'];
@@ -167,9 +169,9 @@ if(!isset($_SESSION['sc_total'])) {
 }
 
 // Retrieve shop preferences just once
-$sql = new db;
-$sql -> db_Select(DB_TABLE_SHOP_PREFERENCES, "*", "store_id=1");
-if ($row = $sql-> db_Fetch()){
+$sql = e107::getDb();
+$sql -> select(DB_TABLE_SHOP_PREFERENCES, "*", "store_id=1");
+if ($row = $sql-> fetch()){
 	$store_name = $row['store_name'];
 	$store_address_1 = $row['store_address_1'];
 	$store_address_2 = $row['store_address_2'];
@@ -241,8 +243,8 @@ if ($email_order == '') {($email_order = 0);} // Introduced in 1.2 RC6, function
 $store_welcome_message = $tp->toHTML($store_welcome_message, true);
 
 // Define actual currency and position of currency character once
-$sql -> db_Select(DB_TABLE_SHOP_CURRENCY, "*", "currency_active=2");
-if ($row = $sql-> db_Fetch()){
+$sql -> select(DB_TABLE_SHOP_CURRENCY, "*", "currency_active=2");
+if ($row = $sql-> fetch()){
 	$unicode_character = $row['unicode_character'];
 	$paypal_currency_code = $row['paypal_currency_code'];
 }
@@ -262,10 +264,10 @@ else {
 // Set values for variables $existing_tems and active_items
 if ($action == "cat" || $action == "prodpage")
 {
-	if ($sql -> db_Count(DB_TABLE_SHOP_ITEMS, "(*)", "WHERE category_id=".$action_id) > 0) {
+	if ($sql -> count(DB_TABLE_SHOP_ITEMS, "(*)", "WHERE category_id=".$action_id) > 0) {
 		$existing_items = 1;
 	}
-	if ($sql -> db_Count(DB_TABLE_SHOP_ITEMS, "(*)", "WHERE category_id=".$action_id." AND item_active_status=2") > 0) {
+	if ($sql -> count(DB_TABLE_SHOP_ITEMS, "(*)", "WHERE category_id=".$action_id." AND item_active_status=2") > 0) {
 		$active_items = 1;
 	}
 }
@@ -452,12 +454,12 @@ if ($_POST['email_order'] == 1 && (USER || (isset($_SESSION['sc_total']['to_name
 	$sender_name  = ((isset($pref['replyto_name']))?$pref['replyto_name']:$pref['siteadmin']);        // Keep 0.7.8 compatible
 	$sender_email = ((isset($pref['replyto_email']))?$pref['replyto_email']:$pref['siteadminemail']); // Keep 0.7.8 compatible
 	if (USER) {
-		$sql = new db;
+		$sql = e107::getDb();
 		$arg="SELECT *
 			 FROM #user
 			 WHERE user_id = ".intval(USERID); // Security fix
-		$sql->db_Select_gen($arg,false);
-		if($row = $sql-> db_Fetch()){
+		$sql->gen($arg,false);
+		if($row = $sql-> fetch()){
 			$to_id     = $row['user_id'];
 			$to_name   = $row['user_name'];
 			$to_email  = $row['user_email'];
@@ -583,13 +585,13 @@ if ($action == 'edit') {
 		// IPN addition - If Quantity is still less than available stock show add option
 		if ((!isset($item['item_track_stock'])) || ($item['quantity'] < $item['item_instock'])) {
 			$text2 .= "
-						<a href='easyshop_basket.php?add.".$id."'><img src='".e_IMAGE."admin_images/up.png' border='noborder' alt='".EASYSHOP_SHOP_33."' title='".EASYSHOP_SHOP_33."'/></a>&nbsp;";
+						<a href='easyshop_basket.php?add.".$id."'><img src='".e_PLUGIN."easyshop/admin_images/up.png' border='noborder' alt='".EASYSHOP_SHOP_33."' title='".EASYSHOP_SHOP_33."'/></a>&nbsp;";
 		} 
 
 		// If quantity equals 1 don't show minus option
 		if ($item['quantity'] > 1) {
 			$text2 .= "
-						<a href='easyshop_basket.php?minus.".$id."'><img src='".e_IMAGE."admin_images/down.png' style='border-style:none;' alt='".EASYSHOP_SHOP_34."' title='".EASYSHOP_SHOP_34."'/></a>";
+						<a href='easyshop_basket.php?minus.".$id."'><img src='" . e_PLUGIN . "easyshop/admin_images/down.png' style='border-style:none;' alt='".EASYSHOP_SHOP_34."' title='".EASYSHOP_SHOP_34."'/></a>";
 		}
 
 		$text2 .= "
@@ -632,8 +634,8 @@ if ($action == 'edit') {
 //---------------------- Display a Category -----------------------------------+
 //-----------------------------------------------------------------------------+
 if ($action == "cat" || $action == "prodpage") {
-	if ($sql -> db_Select(DB_TABLE_SHOP_ITEM_CATEGORIES, "*", "category_id=".$action_id." AND (category_class IN (".USERCLASS_LIST.")) ")){
-		if($row = $sql-> db_Fetch()){
+	if ($sql -> select(DB_TABLE_SHOP_ITEM_CATEGORIES, "*", "category_id=".$action_id." AND (category_class IN (".USERCLASS_LIST.")) ")){
+		if($row = $sql-> fetch()){
 			$category_name = $row['category_name'];
 			$category_main_id  = $row['category_main_id'];
 			$category_order_class = $row['category_order_class'];
@@ -648,8 +650,8 @@ if ($action == "cat" || $action == "prodpage") {
 	}
 
 	if ($category_main_id <> "") {
-		$sql -> db_Select(DB_TABLE_SHOP_MAIN_CATEGORIES, "*", "main_category_id=".$category_main_id);
-		while($row = $sql-> db_Fetch()){
+		$sql -> select(DB_TABLE_SHOP_MAIN_CATEGORIES, "*", "main_category_id=".$category_main_id);
+		while($row = $sql-> fetch()){
 			$main_category_name = $row['main_category_name'];
 		}
 	}
@@ -659,25 +661,25 @@ if ($action == "cat" || $action == "prodpage") {
 	// Print the shop at the 'top' if the setting is not set to 'bottom' (value 1)
 	if ($print_shop_top_bottom != '1') {
 		$es_store_header = print_store_header($store_name,$store_address_1,$store_address_2,$store_city,$store_state,$store_zip,$store_country,$support_email,$store_welcome_message,$print_shop_address);
-		cachevars('easyshop_store_header', $es_store_header);	
+		e107::setRegistry('easyshop_store_header', $es_store_header);	
 	}
   
 	if (isset($main_category_name)) {
 		$easyshop_cat_mcat_link = array($category_main_id,$main_category_name);
-		cachevars('easyshop_cat_mcat_link', $easyshop_cat_mcat_link);
+		e107::setRegistry('easyshop_cat_mcat_link', $easyshop_cat_mcat_link);
 	}
 
-	cachevars('easyshop_cat_catname', $category_name);
+	e107::setRegistry('easyshop_cat_catname', $category_name);
 	if ($existing_items == null) {
-		cachevars('easyshop_cat_no_products', EASYSHOP_SHOP_06);
+		e107::setRegistry('easyshop_cat_no_products', EASYSHOP_SHOP_06);
 	} else {
 		// Total of active product items
-		$sql3 = new db;
-		$total_items = $sql3 -> db_Count(DB_TABLE_SHOP_ITEMS, "(*)", "WHERE item_active_status=2 AND category_id=".$action_id);
+		$sql3= e107::getDb('3');
+		$total_items = $sql3 -> count(DB_TABLE_SHOP_ITEMS, "(*)", "WHERE item_active_status=2 AND category_id=".$action_id);
 
 		$count_rows = 0;
-		$sql -> db_Select(DB_TABLE_SHOP_ITEMS, "*", "item_active_status=2 AND category_id=".$action_id." ORDER BY item_order LIMIT $item_offset, $items_per_page");
-		while($row = $sql-> db_Fetch()){
+		$sql -> select(DB_TABLE_SHOP_ITEMS, "*", "item_active_status=2 AND category_id=".$action_id." ORDER BY item_order LIMIT $item_offset, $items_per_page");
+		while($row = $sql-> fetch()){
 			$item_id = $row['item_id'];
 			$category_id = $row['category_id'];
 			$item_image = $row['item_image'];
@@ -706,9 +708,9 @@ if ($action == "cat" || $action == "prodpage") {
 				${"prop".$n."_prices"} = "";
 				${"prop".$n."_array"} = "";
 				${"price".$n."_array"} = "";
-				$sql2 = new db;
-				$sql2 -> db_Select(DB_TABLE_SHOP_PROPERTIES, "*", "property_id=".${"prod_prop_".$n."_id"});
-				while($row2 = $sql2-> db_Fetch()){
+				$sql2= e107::getDb('2');
+				$sql2 -> select(DB_TABLE_SHOP_PROPERTIES, "*", "property_id=".${"prod_prop_".$n."_id"});
+				while($row2 = $sql2-> fetch()){
 					if ($row2['prop_display_name'] <> "" or $row2['prop_display_name'] <> 0){
                   	    ${"prop".$n."_name"} = $row2['prop_display_name'];
                   	    ${"prop".$n."_list"} = $row2['prop_list'];
@@ -718,9 +720,9 @@ if ($action == "cat" || $action == "prodpage") {
 			}
 
 			if ($prod_discount_id <> "") {
-				$sql3 = new db;
-				$sql3 -> db_Select(DB_TABLE_SHOP_DISCOUNT, "*", "discount_id=".$prod_discount_id);
-				if ($row3 = $sql3-> db_Fetch()){
+				$sql4= e107::getDb('3');
+				$sql4 -> select(DB_TABLE_SHOP_DISCOUNT, "*", "discount_id=".$prod_discount_id);
+				if ($row3 = $sql4-> fetch()){
 					$discount_id = $row3['discount_id'];
 					$discount_name = $row3['discount_name'];
 					$discount_class = $row3['discount_class'];
@@ -743,33 +745,33 @@ if ($action == "cat" || $action == "prodpage") {
 			  // Only show the first image in the category
 			}
 			$easyshop_cat_prod_image = array($item_image,$item_id,$store_image_path);
-			cachevars('easyshop_cat_prod_image', $easyshop_cat_prod_image);
+			e107::setRegistry('easyshop_cat_prod_image', $easyshop_cat_prod_image);
 			// Display text 'view more images' if there are multiple images
 			$easyshop_cat_prod_image_more = array($arrayLength,$item_id);
-			cachevars('easyshop_cat_prod_image_more', $easyshop_cat_prod_image_more);
+			e107::setRegistry('easyshop_cat_prod_image_more', $easyshop_cat_prod_image_more);
 
 			$easyshop_cat_prod_link = array($item_id,$item_name);
-			cachevars('easyshop_cat_prod_link', $easyshop_cat_prod_link);
+			e107::setRegistry('easyshop_cat_prod_link', $easyshop_cat_prod_link);
 
 			$easyshop_cat_prod_price = array($unicode_character_before,$item_price,$unicode_character_after,$item_quotation);
-			cachevars('easyshop_cat_prod_price', $easyshop_cat_prod_price);
+			e107::setRegistry('easyshop_cat_prod_price', $easyshop_cat_prod_price);
 												
 			$easyshop_cat_prod_details_link = array($item_id, EASYSHOP_SHOP_11);
-			cachevars('easyshop_cat_prod_details_link', $easyshop_cat_prod_details_link);
+			e107::setRegistry('easyshop_cat_prod_details_link', $easyshop_cat_prod_details_link);
 			
-			cachevars('easyshop_cat_prod_quotation', ''); // v1.7
+			e107::setRegistry('easyshop_cat_prod_quotation', ''); // v1.7
 			if ($item_quotation == '2') { // v1.7
 				$easyshop_cat_prod_quotation = array($item_quotation,$item_id);
-				cachevars('easyshop_cat_prod_quotation', $easyshop_cat_prod_quotation);
-				cachevars('easyshop_cat_add_to_cart', ""); // Clear the easyshop_cat_add_to_cart variable! 
+				e107::setRegistry('easyshop_cat_prod_quotation', $easyshop_cat_prod_quotation);
+				e107::setRegistry('easyshop_cat_add_to_cart', ""); // Clear the easyshop_cat_add_to_cart variable! 
 			}
 			elseif ($item_out_of_stock == 2) {
 				$easyshop_cat_out_of_stock = array($item_out_of_stock, $item_out_of_stock_explanation);
-				cachevars('easyshop_cat_out_of_stock', $easyshop_cat_out_of_stock);
-				cachevars('easyshop_cat_add_to_cart', ""); // Clear the easyshop_cat_add_to_cart variable!
+				e107::setRegistry('easyshop_cat_out_of_stock', $easyshop_cat_out_of_stock);
+				e107::setRegistry('easyshop_cat_add_to_cart', ""); // Clear the easyshop_cat_add_to_cart variable!
 			} else {
 				// Add to Cart at Category page
-				cachevars('easyshop_cat_out_of_stock', ""); // Clear the easyshop_cat_out_of_stock variable!
+				e107::setRegistry('easyshop_cat_out_of_stock', ""); // Clear the easyshop_cat_out_of_stock variable!
 				$fill_basket = "C"; // To indicate that add to cart is started from Categories page
 				$easyshop_cat_add_to_cart = Forms::add_to_cart_form($prop1_list, $prop1_array, $prop1_prices,$prop1_name,
 								  $prop2_list, $prop2_array, $prop2_prices,$prop2_name,
@@ -784,22 +786,22 @@ if ($action == "cat" || $action == "prodpage") {
 								  $item_id, $item_name, $sku_number, $shipping_first_item, $shipping_additional_item, $handling_override,
 								  $category_id, $item_instock, $item_track_stock, $enable_ipn, $db_id,
 								  $category_order_class, $enable_number_input, $fill_basket);
-				cachevars('easyshop_cat_add_to_cart', $easyshop_cat_add_to_cart);
+				e107::setRegistry('easyshop_cat_add_to_cart', $easyshop_cat_add_to_cart);
 			}
 			if (ADMIN && getperms("P")) { // Show admin icon when administrator
 				$easyshop_admin_icon = array($item_id,$category_id);
-				cachevars('easyshop_admin_icon', $easyshop_admin_icon);
+				e107::setRegistry('easyshop_admin_icon', $easyshop_admin_icon);
 			}
 
-			cachevars('easyshop_cat_table_td_end', "&nbsp;");
+			e107::setRegistry('easyshop_cat_table_td_end', "&nbsp;");
 			$count_rows++;
 
 			if ($count_rows == $num_item_columns) {
-				cachevars('easyshop_cat_conditionalbreak', "&nbsp;");
+				e107::setRegistry('easyshop_cat_conditionalbreak', "&nbsp;");
 				$count_rows = 0;
 			}
 			else {
-				cachevars('easyshop_cat_conditionalbreak', ""); // Clear the easyshop_cat_conditionalbreak variable!
+				e107::setRegistry('easyshop_cat_conditionalbreak', ""); // Clear the easyshop_cat_conditionalbreak variable!
 			}
 			// To avoid confusion for the next to be fetched product; unset most important variables
 			$easyshop_cat_container .= $tp->parseTemplate($ES_CAT_CONTAINER, FALSE, $easyshop_shortcodes);
@@ -809,22 +811,22 @@ if ($action == "cat" || $action == "prodpage") {
 				  $prod_discount_id, $discount_id, $arrayLength);
 			unset($easyshop_cat_prod_image_more, $easyshop_cat_addcart, $easyshop_cat_add_to_cart, $easyshop_cat_prod_quotation);
 		} // End of while fetch
-		cachevars('easyshop_cat_container', $easyshop_cat_container);
+		e107::setRegistry('easyshop_cat_container', $easyshop_cat_container);
 
 		if ($active_items == null) {
-			cachevars('easyshop_cat_no_products', EASYSHOP_SHOP_06);
+			e107::setRegistry('easyshop_cat_no_products', EASYSHOP_SHOP_06);
 		} else {
 			$easyshop_cat_show_checkout = Shop::show_checkout($session_id); // Code optimisation: make use of function show_checkout
-			cachevars('easyshop_cat_show_checkout', $easyshop_cat_show_checkout);
+			e107::setRegistry('easyshop_cat_show_checkout', $easyshop_cat_show_checkout);
 		} // End of Else for show Categorie with active products
 
 		$easyshop_paging = General::multiple_paging($total_items,$items_per_page,$action,$action_id,$page_id,$page_devide_char);
-		cachevars('easyshop_paging', $easyshop_paging);						
+		e107::setRegistry('easyshop_paging', $easyshop_paging);						
 	}
 	// Print the shop at the 'bottom' if the setting is set to 'bottom' (value 1)
 	if ($print_shop_top_bottom == '1') {
 		$es_store_footer = print_store_header($store_name,$store_address_1,$store_address_2,$store_city,$store_state,$store_zip,$store_country,$support_email,$store_welcome_message,$print_shop_address);
-		cachevars('easyshop_store_footer', $es_store_footer);	
+		e107::setRegistry('easyshop_store_footer', $es_store_footer);	
 	}
 	$text = $tp->parseTemplate($ES_CAT_TEMPLATE, FALSE, $easyshop_shortcodes);
 	// Render the value of $text in a table.
@@ -837,12 +839,12 @@ if ($action == "cat" || $action == "prodpage") {
 //-----------------------------------------------------------------------------+
   if ($action == "mcat" ) {
 	// Count the number of categories with the given mcat id
-	$total_categories = $sql->db_Count(DB_TABLE_SHOP_ITEM_CATEGORIES, "(*)", "WHERE category_active_status=2 AND category_main_id=".$action_id." AND (category_class IN (".USERCLASS_LIST.")) ");
+	$total_categories = $sql->count(DB_TABLE_SHOP_ITEM_CATEGORIES, "(*)", "WHERE category_active_status=2 AND category_main_id=".$action_id." AND (category_class IN (".USERCLASS_LIST.")) ");
 
 	if ($total_categories > 0) 
 	{
-		$sql -> db_Select(DB_TABLE_SHOP_MAIN_CATEGORIES, "*", "main_category_id=".$action_id);
-		while($row = $sql-> db_Fetch()){
+		$sql -> select(DB_TABLE_SHOP_MAIN_CATEGORIES, "*", "main_category_id=".$action_id);
+		while($row = $sql-> fetch()){
 			$main_category_id = $row['main_category_id'];
 			$main_category_name = $row['main_category_name'];
 			$main_category_description = $row['main_category_description'];
@@ -856,63 +858,63 @@ if ($action == "cat" || $action == "prodpage") {
 	// Print the shop at the 'top' if the setting is not set to 'bottom' (value 1)
 	if ($print_shop_top_bottom != '1') {
 		$es_store_header = print_store_header($store_name,$store_address_1,$store_address_2,$store_city,$store_state,$store_zip,$store_country,$support_email,$store_welcome_message,$print_shop_address);
-		cachevars('easyshop_store_header', $es_store_header);	
+		e107::setRegistry('easyshop_store_header', $es_store_header);	
 	}
 
 	if (isset($main_category_id)) {
 		$es_mcat_link = array($_GET['url'],$main_category_id,$main_category_name);
-		cachevars('easyshop_mcat_link', $es_mcat_link);	
+		e107::setRegistry('easyshop_mcat_link', $es_mcat_link);	
 	}
 	if (!isset($main_category_id) && ($total_categories > 0)) {
-		cachevars('easyshop_mcat_notfound', EASYSHOP_SHOP_42);
+		e107::setRegistry('easyshop_mcat_notfound', EASYSHOP_SHOP_42);
 	} else {
 		$count_rows = 0;
-		$sql -> db_Select(DB_TABLE_SHOP_ITEM_CATEGORIES, "*", "category_active_status=2 AND category_main_id=".$action_id." AND (category_class IN (".USERCLASS_LIST.")) ORDER BY category_order LIMIT $item_offset, $main_categories_per_page");
-		while($row = $sql-> db_Fetch()){
+		$sql -> select(DB_TABLE_SHOP_ITEM_CATEGORIES, "*", "category_active_status=2 AND category_main_id=".$action_id." AND (category_class IN (".USERCLASS_LIST.")) ORDER BY category_order LIMIT $item_offset, $main_categories_per_page");
+		while($row = $sql-> fetch()){
 			if ($row['category_image'] == '') {
 				$easyshop_cat_image = "&nbsp;";
 			} else {
 				$easyshop_cat_image = array(e_SELF,$row['category_id'],$store_image_path,$row['category_image']);
 			}		
-			cachevars('easyshop_cat_image', $easyshop_cat_image);
+			e107::setRegistry('easyshop_cat_image', $easyshop_cat_image);
 
 			$easyshop_cat_name = array(e_SELF,$row['category_id'],$row['category_name']);
-			cachevars('easyshop_cat_name', $easyshop_cat_name);	
+			e107::setRegistry('easyshop_cat_name', $easyshop_cat_name);	
 
 			$easyshop_cat_descr = $tp->toHTML($row['category_description'], true);
-			cachevars('easyshop_cat_descr', $easyshop_cat_descr);										
+			e107::setRegistry('easyshop_cat_descr', $easyshop_cat_descr);										
 
 			// Count the total of products per category
-			$sql2 = new db;
-			$total_products_category = $sql2->db_Count(DB_TABLE_SHOP_ITEMS, "(*)", "WHERE item_active_status = '2' AND category_id=".$row['category_id']);
-			cachevars('easyshop_total_prods_in_cat', $total_products_category);										
+			$sql2= e107::getDb('2');
+			$total_products_category = $sql2->count(DB_TABLE_SHOP_ITEMS, "(*)", "WHERE item_active_status = '2' AND category_id=".$row['category_id']);
+			e107::setRegistry('easyshop_total_prods_in_cat', $total_products_category);										
 		
 			$count_rows++;
 			if ($count_rows == $num_category_columns) {
 				$count_rows = 0;
-				cachevars('easyshop_row_break', "&nbsp;");
+				e107::setRegistry('easyshop_row_break', "&nbsp;");
 			}
 			else {
-				cachevars('easyshop_row_break', ""); // Clear the easyshop_row_break variable!
+				e107::setRegistry('easyshop_row_break', ""); // Clear the easyshop_row_break variable!
 			}
 			
 			$easyshop_mcat_container .= $tp->parseTemplate($ES_MCAT_CONTAINER, FALSE, $easyshop_shortcodes);
 		}
-		cachevars('easyshop_mcat_container', $easyshop_mcat_container);
+		e107::setRegistry('easyshop_mcat_container', $easyshop_mcat_container);
 		if ($total_categories == null || $total_categories == 0) {
 			$easyshop_zero_cat = EASYSHOP_SHOP_04;
-			cachevars('easyshop_zero_cat', $easyshop_zero_cat);	
+			e107::setRegistry('easyshop_zero_cat', $easyshop_zero_cat);	
 		} else {
 			$easyshop_show_checkout = Shop::show_checkout($session_id); // Code optimisation: make use of function show_checkout
-			cachevars('easyshop_show_checkout', $easyshop_show_checkout);
+			e107::setRegistry('easyshop_show_checkout', $easyshop_show_checkout);
 		} // End of Else for show Categorie with active products
 		$easyshop_paging = General::multiple_paging($total_categories,$main_categories_per_page,$action,$action_id,$page_id,$page_devide_char);
-		cachevars('easyshop_paging', $easyshop_paging);
+		e107::setRegistry('easyshop_paging', $easyshop_paging);
 	}
 	// Print the shop at the 'bottom' if the setting is set to 'bottom' (value 1)
 	if ($print_shop_top_bottom == '1') {
 		$es_store_footer = print_store_header($store_name,$store_address_1,$store_address_2,$store_city,$store_state,$store_zip,$store_country,$support_email,$store_welcome_message,$print_shop_address);
-		cachevars('easyshop_store_footer', $es_store_footer);	
+		e107::setRegistry('easyshop_store_footer', $es_store_footer);	
 	}
 	// Parse the template
 	$text .= $tp->parseTemplate($ES_MCAT_TEMPLATE, FALSE, $easyshop_shortcodes);
@@ -925,12 +927,12 @@ if ($action == "cat" || $action == "prodpage") {
 //----------------------- Display a Product -----------------------------------+
 //-----------------------------------------------------------------------------+
 if ($action == "prod") {
-	if($sql -> db_Count(DB_TABLE_SHOP_ITEM_CATEGORIES, "(*)", "WHERE category_active_status=2  AND (category_class IN (".USERCLASS_LIST.")) ") > 0) {
+	if($sql -> count(DB_TABLE_SHOP_ITEM_CATEGORIES, "(*)", "WHERE category_active_status=2  AND (category_class IN (".USERCLASS_LIST.")) ") > 0) {
 		$no_categories = 1;
 	}
 	// Fetch details per product
-	$sql -> db_Select(DB_TABLE_SHOP_ITEMS, "*", "item_id=".$action_id);
-	if ($row = $sql-> db_Fetch()){
+	$sql -> select(DB_TABLE_SHOP_ITEMS, "*", "item_id=".$action_id);
+	if ($row = $sql-> fetch()){
 		$item_id = $row['item_id'];
 		$category_id = $row['category_id'];
 		$item_image = $row['item_image'];
@@ -957,8 +959,8 @@ if ($action == "prod") {
 		$item_quotation = $row['item_quotation']; // v1.7
 	}
 
-	if ($sql -> db_Select(DB_TABLE_SHOP_ITEM_CATEGORIES, "*", "category_id=".$category_id." AND (category_class IN (".USERCLASS_LIST.")) ")){
-		if ($row = $sql-> db_Fetch()){
+	if ($sql -> select(DB_TABLE_SHOP_ITEM_CATEGORIES, "*", "category_id=".$category_id." AND (category_class IN (".USERCLASS_LIST.")) ")){
+		if ($row = $sql-> fetch()){
 			$category_name = $row['category_name'];
 			$category_main_id  = $row['category_main_id'];
 			$category_order_class = $row['category_order_class'];
@@ -973,15 +975,15 @@ if ($action == "prod") {
 	}
 
 	if ($category_main_id <> "") {
-		$sql -> db_Select(DB_TABLE_SHOP_MAIN_CATEGORIES, "*", "main_category_id=".$category_main_id);
-		if ($row = $sql-> db_Fetch()){
+		$sql -> select(DB_TABLE_SHOP_MAIN_CATEGORIES, "*", "main_category_id=".$category_main_id);
+		if ($row = $sql-> fetch()){
 			$main_category_name = $row['main_category_name'];
 		}
 	}
 
 	for ($n = 1; $n < 6; $n++){
-		$sql -> db_Select(DB_TABLE_SHOP_PROPERTIES, "*", "property_id=".${"prod_prop_".$n."_id"});
-		if ($row = $sql-> db_Fetch()){
+		$sql -> select(DB_TABLE_SHOP_PROPERTIES, "*", "property_id=".${"prod_prop_".$n."_id"});
+		if ($row = $sql-> fetch()){
 			${"prop".$n."_name"} = $row['prop_display_name'];
 			${"prop".$n."_list"} = $row['prop_list'];
 			${"prop".$n."_prices"} = $row['prop_prices'];
@@ -989,8 +991,8 @@ if ($action == "prod") {
 	}
   
 	if ($prod_discount_id <> "") {
-		$sql -> db_Select(DB_TABLE_SHOP_DISCOUNT, "*", "discount_id=".$prod_discount_id);
-		if ($row = $sql-> db_Fetch()){
+		$sql -> select(DB_TABLE_SHOP_DISCOUNT, "*", "discount_id=".$prod_discount_id);
+		if ($row = $sql-> fetch()){
 			$discount_id = $row['discount_id'];
 			$discount_name = $row['discount_name'];
 			$discount_class = $row['discount_class'];
@@ -1010,26 +1012,26 @@ if ($action == "prod") {
 	// Print the shop at the 'top' if the setting is not set to 'bottom' (value 1)
 	if ($print_shop_top_bottom != '1') {
 		$es_store_header = print_store_header($store_name,$store_address_1,$store_address_2,$store_city,$store_state,$store_zip,$store_country,$support_email,$store_welcome_message,$print_shop_address);
-		cachevars('easyshop_store_header', $es_store_header);	
+		e107::setRegistry('easyshop_store_header', $es_store_header);	
 	}
 
 	if ($category_main_id <> "0") {
 		$easyshop_prod_mcat_link = array($category_main_id, $main_category_name);
-		cachevars('easyshop_prod_mcat_link', $easyshop_prod_mcat_link);
+		e107::setRegistry('easyshop_prod_mcat_link', $easyshop_prod_mcat_link);
 	}
 
-	cachevars('easyshop_download_datasheet_filename', '');
+	e107::setRegistry('easyshop_download_datasheet_filename', '');
 	if ($download_datasheet == "2") { // v1.7
-		cachevars('easyshop_download_datasheet_filename', $item_id);
+		e107::setRegistry('easyshop_download_datasheet_filename', $item_id);
 	}
    
  	$item_image_list = explode(",",$item_image);
  	$arrayLength = count($item_image_list);
 
 	$easyshop_prod_cat_link = array($category_id, $category_name);
-	cachevars('easyshop_prod_cat_link', $easyshop_prod_cat_link);
+	e107::setRegistry('easyshop_prod_cat_link', $easyshop_prod_cat_link);
 	
-	cachevars('easyshop_prod_breadcrum', $item_name);
+	e107::setRegistry('easyshop_prod_breadcrum', $item_name);
 	if (strlen($item_image)>0) { // Only display images when we have them
 		// Display multiple images in JavaScript SlideShow
 		$text .='
@@ -1070,47 +1072,47 @@ if ($action == "prod") {
 			</SCRIPT>
 			';
 		$easyshop_prod_image = array($store_image_path,$item_image_list);
-		cachevars('easyshop_prod_image', $easyshop_prod_image);
+		e107::setRegistry('easyshop_prod_image', $easyshop_prod_image);
 	}
-	cachevars('easyshop_prod_name', $item_name);
+	e107::setRegistry('easyshop_prod_name', $item_name);
 							
 	// Display the SKU number if it is filled in
 	if ($sku_number <> "") {
-		cachevars('easyshop_prod_sku_number', $sku_number);
+		e107::setRegistry('easyshop_prod_sku_number', $sku_number);
 	}
 
-	cachevars('easyshop_prod_description', $tp->toHTML($item_description, true));
+	e107::setRegistry('easyshop_prod_description', $tp->toHTML($item_description, true));
 	
 	$easyshop_prod_price = array($unicode_character_before,$item_price,$unicode_character_after,$item_quotation); // v1.7
-	cachevars('easyshop_prod_price', $easyshop_prod_price);
+	e107::setRegistry('easyshop_prod_price', $easyshop_prod_price);
 			
 	// Conditionally print additional costs if they are more than zero
 	if ($shipping_first_item > 0 ){
 		$easyshop_prod_costs_shipping_first_item = array($unicode_character_before,$shipping_first_item,$unicode_character_after);
-		cachevars('easyshop_prod_costs_shipping_first_item', $easyshop_prod_costs_shipping_first_item);
+		e107::setRegistry('easyshop_prod_costs_shipping_first_item', $easyshop_prod_costs_shipping_first_item);
 	}
 
 	if ($shipping_additional_item > 0 ){
 		$easyshop_prod_costs_additional_item = array($unicode_character_before,$shipping_additional_item,$unicode_character_after);
-		cachevars('easyshop_prod_costs_additional_item', $easyshop_prod_costs_additional_item);
+		e107::setRegistry('easyshop_prod_costs_additional_item', $easyshop_prod_costs_additional_item);
 	}
 
 	if ($handling_override > 0 ){
 		$easyshop_prod_costs_handling = array($unicode_character_before,$handling_override,$unicode_character_after);
-		cachevars('easyshop_prod_costs_handling', $easyshop_prod_costs_handling);			
+		e107::setRegistry('easyshop_prod_costs_handling', $easyshop_prod_costs_handling);			
 	}
     
 	if ($item_quotation == 2) {
 		$easyshop_item_quotation = array($item_quotation,$item_id);
-		cachevars('easyshop_item_quotation', $easyshop_item_quotation);
+		e107::setRegistry('easyshop_item_quotation', $easyshop_item_quotation);
 	} elseif ($item_out_of_stock == 2) {
 		$easyshop_prod_out_of_stock = array($item_out_of_stock, $item_out_of_stock_explanation);
-		cachevars('easyshop_prod_out_of_stock', $easyshop_prod_out_of_stock);
+		e107::setRegistry('easyshop_prod_out_of_stock', $easyshop_prod_out_of_stock);
 	} else {
-		$prop1_count = $sql->db_Count(DB_TABLE_SHOP_ITEM_CATEGORIES, "(*)", "WHERE item_id=".$action_id." AND (category_class IN (".USERCLASS_LIST.")) ");
+		$prop1_count = $sql->count(DB_TABLE_SHOP_ITEM_CATEGORIES, "(*)", "WHERE item_id=".$action_id." AND (category_class IN (".USERCLASS_LIST.")) ");
 		if ($prop1_count = 0) {
 			// Error that should not happen! Indicate that item_id does not exists.
-			cachevars('easyshop_prod_non_extistant', $prop1_count);
+			e107::setRegistry('easyshop_prod_non_extistant', $prop1_count);
 		}
 		// Add to Cart at Product Details page
 		$fill_basket = "P"; // To indicate that add to cart is started from Product Details page
@@ -1127,30 +1129,30 @@ if ($action == "prod") {
 								  $item_id, $item_name, $sku_number, $shipping_first_item, $shipping_additional_item, $handling_override,
 								  $category_id, $item_instock, $item_track_stock, $enable_ipn, $db_id,
 								  $category_order_class, $enable_number_input, $fill_basket);
-		cachevars('easyshop_add_to_cart', $easyshop_add_to_cart);
+		e107::setRegistry('easyshop_add_to_cart', $easyshop_add_to_cart);
 	} // End of the Else for an active product in the Details view
 
 	// View Cart at Product Details page
 	$easyshop_prod_show_checkout = Shop::show_checkout($session_id);
-	cachevars('easyshop_prod_show_checkout', $easyshop_prod_show_checkout);
+	e107::setRegistry('easyshop_prod_show_checkout', $easyshop_prod_show_checkout);
 
 	if (ADMIN && getperms("P")) { // Show admin icon when administrator
 		$easyshop_admin_icon = array($item_id,$category_id);
-		cachevars('easyshop_admin_icon', $easyshop_admin_icon);
+		e107::setRegistry('easyshop_admin_icon', $easyshop_admin_icon);
 	}
 	// Print the shop at the 'bottom' if the setting is set to 'bottom' (value 1)
 	if ($print_shop_top_bottom == '1') {
 		$es_store_footer = print_store_header($store_name,$store_address_1,$store_address_2,$store_city,$store_state,$store_zip,$store_country,$support_email,$store_welcome_message,$print_shop_address);
-		cachevars('easyshop_store_footer', $es_store_footer);	
+		e107::setRegistry('easyshop_store_footer', $es_store_footer);	
 	}
 
 	$text .= $tp->parseTemplate($ES_PROD_TEMPLATE, FALSE, $easyshop_shortcodes); // Extend the $text variable (that contains javascript when there are images)
 
 	if ($enable_comments == 1) { // Show comment totals or 'Be the first to comment etc' when total is zero when setting is enabled
-		if (General::getCommentTotal(easyshop, $item_id) == 0) {
+		if (General::getCommentTotal('easyshop', $item_id) == 0) {
 		  $text .= "<br />".EASYSHOP_SHOP_38;
 		} else {
-		  $text .= "<br />".EASYSHOP_SHOP_39.": ".General::getCommentTotal(easyshop, $item_id);
+		  $text .= "<br />".EASYSHOP_SHOP_39.": ".General::getCommentTotal('easyshop', $item_id);
 		}
 	}
 	// Render the value of $text in a table.
@@ -1179,72 +1181,75 @@ if($action == "allcat" || $action == "catpage" || $action == "blanks") {
 	if ($action == "blanks") {
 		$add_where = " AND category_main_id= '' ";
 	}
-	$categories_count = $sql -> db_Count(DB_TABLE_SHOP_ITEM_CATEGORIES, "(*)", "WHERE category_active_status = 2 ".$add_where." AND (category_class IN (".USERCLASS_LIST."))");
+	$categories_count = $sql -> count(DB_TABLE_SHOP_ITEM_CATEGORIES, "(*)", "WHERE category_active_status = 2 ".$add_where." AND (category_class IN (".USERCLASS_LIST."))");
 	if($categories_count > 0) {
 		$no_categories = 1;
 	}
 	// Print the shop at the 'top' if the setting is not set to 'bottom' (value 1)
 	if ($print_shop_top_bottom != '1') {
 		$easyshop_store_header = print_store_header($store_name,$store_address_1,$store_address_2,$store_city,$store_state,$store_zip,$store_country,$support_email,$store_welcome_message,$print_shop_address);
-		cachevars('easyshop_store_header', $easyshop_store_header);		
+		e107::setRegistry('easyshop_store_header', $easyshop_store_header);		
 	}
 	// Determine the offset to display
 	$category_offset = General::determine_offset($action,$action_id,$categories_per_page);
-	cachevars("easyshop_allcat_action", $action);
+	e107::setRegistry("easyshop_allcat_action", $action);
 	if (!isset($no_categories)) {
-		cachevars('easyshop_allcat_no_categories', EASYSHOP_SHOP_04);
+		e107::setRegistry('easyshop_allcat_no_categories', EASYSHOP_SHOP_04);
 	} else {
 		$count_rows = 0;
-		$sql -> db_Select(DB_TABLE_SHOP_ITEM_CATEGORIES, "*", "category_active_status=2 $add_where AND (category_class IN (".USERCLASS_LIST.")) ORDER BY category_order LIMIT $category_offset, $categories_per_page");
-		while($row = $sql-> db_Fetch()){
+		$sql -> select(DB_TABLE_SHOP_ITEM_CATEGORIES, "*", "category_active_status=2 $add_where AND (category_class IN (".USERCLASS_LIST.")) ORDER BY category_order LIMIT $category_offset, $categories_per_page");
+		while($row = $sql-> fetch()){
+			
 			$easyshop_allcat_cat_name_link = array($row['category_id'],$row['category_name']);
-			cachevars('easyshop_allcat_cat_name_link', $easyshop_allcat_cat_name_link);
+			e107::setRegistry('easyshop_allcat_cat_name_link', $easyshop_allcat_cat_name_link);
 
 			$easyshop_allcat_cat_image = array($row['category_id'],$store_image_path, $row['category_image']);
-			cachevars('easyshop_allcat_cat_image', $easyshop_allcat_cat_image);
+			e107::setRegistry('easyshop_allcat_cat_image', $easyshop_allcat_cat_image);
 
 			$easyshop_allcat_cat_description = $tp->toHTML($row['category_description'], true);
-			cachevars('easyshop_allcat_cat_description', $easyshop_allcat_cat_description);
+			e107::setRegistry('easyshop_allcat_cat_description', $easyshop_allcat_cat_description);
 
 			// Count the total of products per category
-			$sql2 = new db;
-			$total_products_category = $sql2->db_Count(DB_TABLE_SHOP_ITEMS, "(*)", "WHERE item_active_status=2 AND category_id=".$row['category_id']);
+			$sql2= e107::getDb('2');
+			$total_products_category = $sql2->count(DB_TABLE_SHOP_ITEMS, "(*)", "WHERE item_active_status=2 AND category_id=".$row['category_id']);
+
 			// Display 'product' or 'products' (takes place in the shortcode)
-			cachevars('easyshop_allcat_total_prod_per_cat', $total_products_category);
+			e107::setRegistry('easyshop_allcat_total_prod_per_cat', $total_products_category);
 			// Display if category if class specific
 			if ($row['category_class'] > 0 ) {
-				cachevars('easyshop_allcat_class_specific', EASYSHOP_SHOP_54);
+				e107::setRegistry('easyshop_allcat_class_specific', EASYSHOP_SHOP_54);
 			}
 
-			cachevars('easyshop_allcat_table_td_end', "&nbsp;");
+			e107::setRegistry('easyshop_allcat_table_td_end', "&nbsp;");
 			$count_rows++;
 
 			if ($count_rows == $num_category_columns) {
-				cachevars('easyshop_allcat_conditionalbreak', "&nbsp;");
+				e107::setRegistry('easyshop_allcat_conditionalbreak', "&nbsp;");
 				$count_rows = 0;
 			}
 			else {
-				cachevars('easyshop_allcat_conditionalbreak', ""); // Clear the easyshop_allcat_conditionalbreak variable!
+				e107::setRegistry('easyshop_allcat_conditionalbreak', ""); // Clear the easyshop_allcat_conditionalbreak variable!
 			}
 			$easyshop_allcat_container .= $tp->parseTemplate($ES_ALLCAT_CONTAINER, FALSE, $easyshop_shortcodes);;
 		}
-		cachevars('easyshop_allcat_container', $easyshop_allcat_container);
+		e107::setRegistry('easyshop_allcat_container', $easyshop_allcat_container);
 
-		$total_categories = $sql -> db_Count(DB_TABLE_SHOP_ITEM_CATEGORIES, "(*)", "WHERE category_active_status=2 ".$add_where." AND (category_class IN (".USERCLASS_LIST."))");
+		$total_categories = $sql -> count(DB_TABLE_SHOP_ITEM_CATEGORIES, "(*)", "WHERE category_active_status=2 ".$add_where." AND (category_class IN (".USERCLASS_LIST."))");
 		$easyshop_allcat_paging = General::multiple_paging($total_categories,$categories_per_page,$action,$action_id,$page_id,$page_devide_char);
-		cachevars('easyshop_allcat_paging', $easyshop_allcat_paging);
+		e107::setRegistry('easyshop_allcat_paging', $easyshop_allcat_paging);
 
 	}
 	$easyshop_allcat_show_checkout = Shop::show_checkout($session_id);
-	cachevars('easyshop_allcat_show_checkout', $easyshop_allcat_show_checkout);
+	e107::setRegistry('easyshop_allcat_show_checkout', $easyshop_allcat_show_checkout);
 
     // Print the shop at the 'bottom' if the setting is set to 'bottom' (value 1)
 	if ($print_shop_top_bottom == '1') {
 		$easyshop_store_footer = print_store_header($store_name,$store_address_1,$store_address_2,$store_city,$store_state,$store_zip,$store_country,$support_email,$store_welcome_message,$print_shop_address);
-		cachevars('easyshop_store_footer', $easyshop_store_footer);		
+		e107::setRegistry('easyshop_store_footer', $easyshop_store_footer);		
 	}
 
 	$text = $tp->parseTemplate($ES_ALLCAT_TEMPLATE, FALSE, $easyshop_shortcodes);
+
 	// Render the value of $text in a table.
 	$title = EASYSHOP_SHOP_00;
 	$ns -> tablerender($title, $text);
@@ -1254,11 +1259,11 @@ if($action == "allcat" || $action == "catpage" || $action == "blanks") {
 //-------------------- Show All MAIN Categories -------------------------------+
 //-----------------------------------------------------------------------------+
 if($action == "" || $action == "mcatpage") {
-	$main_categories = ($sql -> db_Count(DB_TABLE_SHOP_MAIN_CATEGORIES, "(*)", "WHERE main_category_active_status = 2") > 0);
+	$main_categories = ($sql -> count(DB_TABLE_SHOP_MAIN_CATEGORIES, "(*)", "WHERE main_category_active_status = 2") > 0);
 	// Print the shop at the 'top' if the setting is not set to 'bottom' (value 1)
 	if ($print_shop_top_bottom != '1') {
 		$easyshop_store_header = print_store_header($store_name,$store_address_1,$store_address_2,$store_city,$store_state,$store_zip,$store_country,$support_email,$store_welcome_message,$print_shop_address);
-		cachevars('easyshop_store_header', $easyshop_store_header);		
+		e107::setRegistry('easyshop_store_header', $easyshop_store_header);		
 	}
 	// Determine the offset to display
 	$main_category_offset = General::determine_offset($action,$action_id,$main_categories_per_page);
@@ -1267,70 +1272,70 @@ if($action == "" || $action == "mcatpage") {
         header("Location: "."easyshop.php?allcat");
 	} else {
 		$count_rows = 0;
-        $sql5 = new db;
+        $sql5 = e107::getDb('5');
 		// Only display main category records in use
 		$arg5= "SELECT DISTINCT category_main_id, main_category_id, main_category_name, main_category_image, main_category_description
 		   FROM #easyshop_item_categories, #easyshop_main_categories
 		   WHERE category_main_id=main_category_id AND main_category_active_status=2
 		   ORDER BY main_category_order, main_category_name
 		   LIMIT $main_category_offset, $main_categories_per_page";
-        $sql5->db_Select_gen($arg5,false);
-		while($row5 = $sql5-> db_Fetch()){
+        $sql5->gen($arg5,false);
+		while($row5 = $sql5-> fetch()){
 			$easyshop_mcat_name = array(e_SELF,$row5['main_category_id'],$row5['main_category_name']);
-			cachevars('easyshop_mcat_name',$easyshop_mcat_name);							
+			e107::setRegistry('easyshop_mcat_name',$easyshop_mcat_name);							
 			if ($row5['main_category_image'] == '') {
 				$easyshop_mcat_image = "&nbsp;";
 			} else {
 				$easyshop_mcat_image = array(e_SELF,$row5['main_category_id'],$store_image_path,$row5['main_category_image']);
 			}
-			cachevars('easyshop_mcat_image', $easyshop_mcat_image);
+			e107::setRegistry('easyshop_mcat_image', $easyshop_mcat_image);
             // Count active Product Categories with the current fetched Main Category and show them additionally below description
-            $sql8 = new db;
-            $cat_with_this_main = $sql8 -> db_Count(DB_TABLE_SHOP_ITEM_CATEGORIES, "(*)", "WHERE category_active_status=2 AND category_main_id=".$row5['main_category_id']." AND (category_class IN (".USERCLASS_LIST.")) ");
+            $sql8 = e107::getDb('8');
+            $cat_with_this_main = $sql8 -> count(DB_TABLE_SHOP_ITEM_CATEGORIES, "(*)", "WHERE category_active_status=2 AND category_main_id=".$row5['main_category_id']." AND (category_class IN (".USERCLASS_LIST.")) ");
 			$easyshop_mcat_descr = array($tp->toHTML($row5['main_category_description'], true),$cat_with_this_main);
-			cachevars('easyshop_mcat_descr', $easyshop_mcat_descr);
+			e107::setRegistry('easyshop_mcat_descr', $easyshop_mcat_descr);
 			$count_rows++;
 			if ($count_rows == $num_main_category_columns) {
-				cachevars('easyshop_mcat_conditionalbreak', "&nbsp;");
+				e107::setRegistry('easyshop_mcat_conditionalbreak', "&nbsp;");
 				$count_rows = 0;
 			}
 			else {
-				cachevars('easyshop_mcat_conditionalbreak', ""); // Clear the easyshop_mcat_conditionalbreak variable!
+				e107::setRegistry('easyshop_mcat_conditionalbreak', ""); // Clear the easyshop_mcat_conditionalbreak variable!
 			}
 			$easyshop_all_mcat_container .= $tp->parseTemplate($ES_ALL_MCAT_CONTAINER, FALSE, $easyshop_shortcodes);
 		} // End of while of fetching all main categories in use
-		cachevars('easyshop_all_mcat_container', $easyshop_all_mcat_container);
+		e107::setRegistry('easyshop_all_mcat_container', $easyshop_all_mcat_container);
 								
 		// Count active Product Categories without Main Category and show them additionally on last page
-		$sql7 = new db;
-		$cat_without_main = $sql7 -> db_Count(DB_TABLE_SHOP_ITEM_CATEGORIES, "(*)", "WHERE category_active_status=2 AND category_main_id='' AND (category_class IN (".USERCLASS_LIST.")) ");
+		$sql7 = e107::getDb('7');
+		$cat_without_main = $sql7 -> count(DB_TABLE_SHOP_ITEM_CATEGORIES, "(*)", "WHERE category_active_status=2 AND category_main_id='' AND (category_class IN (".USERCLASS_LIST.")) ");
 		if ($cat_without_main > 0) {
-			cachevars('easyshop_mcat_loose_title', $cat_without_main);
+			e107::setRegistry('easyshop_mcat_loose_title', $cat_without_main);
 			$count_rows++;
 			$easyshop_all_mcat_loose_container = $tp->parseTemplate($ES_ALL_MCAT_LOOSE_CONTAINER, FALSE, $easyshop_shortcodes);
-			cachevars('easyshop_all_mcat_loose_container', $easyshop_all_mcat_loose_container);
+			e107::setRegistry('easyshop_all_mcat_loose_container', $easyshop_all_mcat_loose_container);
         } // End of if $cat_without_main
 
-        $sql6 = new db;
+        $sql6 = e107::getDB('6');
 		// Only display main category records in use
 		$arg6 ="SELECT DISTINCT category_main_id, main_category_id, main_category_name, main_category_image, main_category_description
 		FROM #easyshop_item_categories, #easyshop_main_categories
 		WHERE category_main_id=main_category_id AND main_category_active_status=2";
-        $sql6->db_Select_gen($arg6,false);
-		while($row6 = $sql6-> db_Fetch()){
+        $sql6->gen($arg6,false);
+		while($row6 = $sql6-> fetch()){
             $count_total_categories++;
         }
         $total_categories = $count_total_categories;
 		$easyshop_paging = General::multiple_paging($total_categories,$main_categories_per_page,$action,$action_id,$page_id,$page_devide_char);
-		cachevars('easyshop_paging', $easyshop_paging);
+		e107::setRegistry('easyshop_paging', $easyshop_paging);
 	} // End of else
 	$easyshop_show_checkout = Shop::show_checkout($session_id); // Code optimisation: make use of function show_checkout
-	cachevars('easyshop_show_checkout', $easyshop_show_checkout);
+	e107::setRegistry('easyshop_show_checkout', $easyshop_show_checkout);
 
 	// Print the shop at the 'bottom' if the setting is set to 'bottom' (value 1)
 	if ($print_shop_top_bottom == '1') {
 		$easyshop_store_footer = print_store_header($store_name,$store_address_1,$store_address_2,$store_city,$store_state,$store_zip,$store_country,$support_email,$store_welcome_message,$print_shop_address);
-		cachevars('easyshop_store_footer', $easyshop_store_footer);		
+		e107::setRegistry('easyshop_store_footer', $easyshop_store_footer);		
 	}
 
 	$text = $tp->parseTemplate($ES_ALL_MCAT_TEMPLATE, FALSE, $easyshop_shortcodes);
@@ -1359,39 +1364,39 @@ function print_store_header($p_name,$p_address_1,$p_address_2,$p_city,$p_state,$
 	if ($display_message == null) {
 		// Don't display address
 	} else {
-		cachevars('easyshop_store_name', $p_name);
+		e107::setRegistry('easyshop_store_name', $p_name);
 		if ($p_address_1 != null){
-			cachevars('easyshop_store_address1', $p_address_1);
+			e107::setRegistry('easyshop_store_address1', $p_address_1);
 		}
 		if ($p_address_2 !=null){
-			cachevars('easyshop_store_address2', $p_address_2);
+			e107::setRegistry('easyshop_store_address2', $p_address_2);
 		}
 		if ($p_city != null){
-			cachevars('easyshop_store_city', $p_city);
+			e107::setRegistry('easyshop_store_city', $p_city);
 		}
 		if (($p_address_1 == null) && ($p_address_2 == null) && ($p_city == null)) {
-			cachevars('easyshop_store_conditionalbreak', "&nbsp;");
+			e107::setRegistry('easyshop_store_conditionalbreak', "&nbsp;");
 		}
 		if ($p_state != null){
-			cachevars('easyshop_store_state', $p_state);
+			e107::setRegistry('easyshop_store_state', $p_state);
 		}
 		if ($p_zip != null){
-			cachevars('easyshop_store_zip', $p_zip);
+			e107::setRegistry('easyshop_store_zip', $p_zip);
 		}
 		if (($p_address_1 == null) && ($p_address_2 == null) && ($p_city == null) && ($p_state == null) && ($p_zip == null)) {
 			// Don't add a line break
 		} else {
-			cachevars('easyshop_store_conditionalbreak2', "&nbsp;");
+			e107::setRegistry('easyshop_store_conditionalbreak2', "&nbsp;");
 		}
 		if ($p_country != null){
-			cachevars('easyshop_store_country', $p_country);
+			e107::setRegistry('easyshop_store_country', $p_country);
 		}
 		if (strlen(trim($p_email)) > 0) {
 			// Security: protect shop e-mail from e-mail harvasting
 			// Method: split the contact e-mail and present it in inline javascript
-			$email = split("@", $p_email); //split e-mail address at the @-sign
+			$email = explode("@", $p_email); //split e-mail address at the @-sign
 			  $p_email_name = $email[0]; // everything before the @-sign
-			$tld = split(".", $email[1]); //split the part after the @-sign on dot-sign
+			$tld = explode(".", $email[1]); //split the part after the @-sign on dot-sign
 			//Now use an if->else to find out if it's a subdomain or not
 			if(count($tld) == 2) {
 			  //Normal simple address as someone@blah.com
@@ -1405,10 +1410,10 @@ function print_store_header($p_name,$p_address_1,$p_address_2,$p_city,$p_state,$
 			}
 			// Display the splitted e-mail in an inline javascript where we join them to one e-mail address (in the shortcode)
 			$easyshop_store_email = array($p_email_name,$p_email_domain,$p_email_tld);
-			cachevars('easyshop_store_email', $easyshop_store_email);					
+			e107::setRegistry('easyshop_store_email', $easyshop_store_email);					
 		} // End of showing e-mail when filled in
 	} // End of else of displaying address
-	cachevars('easyshop_store_welcome_message', $p_welcome_message);
+	e107::setRegistry('easyshop_store_welcome_message', $p_welcome_message);
 	$sh_text = $tp->parseTemplate($ES_STORE_CONTAINER, FALSE, $easyshop_shortcodes);
 	return $sh_text;
 }
@@ -1508,7 +1513,7 @@ function MailOrder($unicode_character_before, $unicode_character_after, $pref_si
 			
 			$message .= "</div><br /><br /><div style='text-align:center;'>&copy; <a href='http://e107.webstartinternet.com/'>EasyShop</a></div>";
 
-			if(!ShopMail::easyshop_sendemail($address, $subject, $message, $header)) {
+			if(!ShopMail::easyshop_sendemail($address, $subject, $message, $header, NULL)) {
 				$message = EASYSHOP_SHOP_55;  // Order e-mail failed
 			} else {
 				// Send also a copy to the shop owner
@@ -1518,7 +1523,7 @@ function MailOrder($unicode_character_before, $unicode_character_after, $pref_si
 				global $e107;
 				$ip = $e107->getip();
 				$message .= "<br />".EASYSHOP_SHOP_81.": ".$ip; // Add 'Send from IP address' to mail message
-				if(!ShopMail::easyshop_sendemail($address, $subject, $message, $header)) {
+				if(!ShopMail::easyshop_sendemail($address, $subject, $message, $header, NULL)) {
 					$message = EASYSHOP_SHOP_63;  // Order e-mail to admin failed
 				} else {
 					$message = EASYSHOP_SHOP_56; // Order e-mail succeeded

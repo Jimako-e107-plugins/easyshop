@@ -14,8 +14,9 @@
 */
 if (!defined('e107_INIT')) { exit(); }
 global $tp;
-// Get language file (assume that the English language file is always present)
-include_lan(e_PLUGIN.'easyshop/languages/'.e_LANGUAGE.'.php');
+
+e107::lan('easyshop', NULL);
+
 // include define tables info
 require_once(e_PLUGIN."easyshop/includes/config.php"); // It's important to point to the correct plugin folder!
 
@@ -25,7 +26,7 @@ require_once('easyshop_class.php');
 // Randomly pick an active product from an active product category (only pick categories that user is entitled to see)
 // with an active discount that the user is entitled to see
 $today = time();
-$sql = new db;
+$sql = e107::getDb();
 $arg="SELECT *
       FROM #easyshop_items
       LEFT JOIN #easyshop_item_categories
@@ -38,8 +39,8 @@ $arg="SELECT *
             AND (discount_class IN (".USERCLASS_LIST."))
       ORDER BY RAND()";
 
-$sql->db_Select_gen($arg,false);
-if ($row = $sql-> db_Fetch() and ($row["item_id"] > 0)){
+$sql->gen($arg,false);
+if ($row = $sql-> fetch() and ($row["item_id"] > 0)){
     $category_id = $row["category_id"];
 		$item_id = $row["item_id"];
 		$item_name = $row["item_name"];
@@ -59,8 +60,8 @@ $discount_price = $row["discount_price"];
 $property_prices = $row["property_prices"];
 
     // Retrieve shop settings
-    $sql -> db_Select(DB_TABLE_SHOP_PREFERENCES, "*", "store_id=1");
-    if ($row = $sql-> db_Fetch()){
+    $sql -> select(DB_TABLE_SHOP_PREFERENCES, "*", "store_id=1");
+    if ($row = $sql-> fetch()){
         $store_image_path = $row['store_image_path'];
         $set_currency_behind = $row['set_currency_behind'];
     }
@@ -70,8 +71,8 @@ $property_prices = $row["property_prices"];
     if ($set_currency_behind == '') {($set_currency_behind = 0);}
 
     // Define position of currency character
-    $sql -> db_Select(DB_TABLE_SHOP_CURRENCY, "*", "currency_active=2");
-    if($row = $sql-> db_Fetch()){
+    $sql -> select(DB_TABLE_SHOP_CURRENCY, "*", "currency_active=2");
+    if($row = $sql-> fetch()){
     	$unicode_character = $row['unicode_character'];
     	$paypal_currency_code = $row['paypal_currency_code'];
     }

@@ -699,8 +699,8 @@ define("EASYSHOP_STS_01", "IPN orders");
 
 // not in use
 define("EASYSHOP_00", "*");
-define("EASYSHOP_PREF_00", EASYSHOP_NAME." - ".EASYSHOP_MENU_00);
+//define("EASYSHOP_PREF_00", EASYSHOP_NAME." - ".EASYSHOP_MENU_00);
 define("EASYSHOP_PREF_CONFIG_00", "*");
 define("EASYSHOP_PREF_FIELDS_05_0", " *");
 define("EASYSHOP_PREF_DISPLAY_00", "*");
-?>
+ 

@@ -15,8 +15,8 @@
 if (!defined('e107_INIT')) { exit(); }
 
 global $tp;
-// Get language file (assume that the English language file is always present)
-include_lan(e_PLUGIN.'easyshop/languages/'.e_LANGUAGE.'.php');
+
+e107::lan('easyshop', NULL);
 
 // include define tables info
 require_once(e_PLUGIN."easyshop/includes/config.php"); // It's important to point to the correct plugin folder!
@@ -28,15 +28,15 @@ $session_id = Security::get_session_id(); // Get the session id by using Singlet
 $_SESSION['easyshop_menu'] = true;
 
 // Randomly pick an active product from an active product category (only pick categories that user is entitled to see)
-$sql = new db;
+$sql = e107::getDb();
 $arg="SELECT *
       FROM #easyshop_items
       LEFT JOIN #easyshop_item_categories
       ON #easyshop_items.category_id = #easyshop_item_categories.category_id
       WHERE category_active_status = '2' AND item_active_status = '2' AND (category_class IN (".USERCLASS_LIST."))
       ORDER BY RAND()";
-$sql->db_Select_gen($arg,false);
-if ($row = $sql-> db_Fetch()){
+$sql->gen($arg,false);
+if ($row = $sql-> fetch()){
     $category_id = $row["category_id"];
 		$item_id = $row["item_id"];
 		$item_name = $row["item_name"];
@@ -46,8 +46,8 @@ if ($row = $sql-> db_Fetch()){
     $item_price = $row["item_price"];
 
     // Retrieve shop settings
-    $sql -> db_Select(DB_TABLE_SHOP_PREFERENCES, "*", "store_id=1");
-    if ($row = $sql-> db_Fetch()){
+    $sql -> select(DB_TABLE_SHOP_PREFERENCES, "*", "store_id=1");
+    if ($row = $sql-> fetch()){
         $store_image_path = $row['store_image_path'];
         $set_currency_behind = $row['set_currency_behind'];
         $show_shopping_bag = $row['show_shopping_bag'];
@@ -85,8 +85,8 @@ if ($row = $sql-> db_Fetch()){
     if ($set_currency_behind == '') {($set_currency_behind = 0);}
 
     // Define position of currency character
-    $sql -> db_Select(DB_TABLE_SHOP_CURRENCY, "*", "currency_active=2");
-    if($row = $sql-> db_Fetch()){
+    $sql -> select(DB_TABLE_SHOP_CURRENCY, "*", "currency_active=2");
+    if($row = $sql-> fetch()){
     	$unicode_character = $row['unicode_character'];
     	$paypal_currency_code = $row['paypal_currency_code'];
     }

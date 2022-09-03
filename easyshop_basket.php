@@ -16,8 +16,8 @@
 // class2.php is the heart of e107, always include it first to give access to e107 constants and variables
 require_once('../../class2.php');
 
-// Get language file (assume that the English language file is always present)
-include_lan(e_PLUGIN.'easyshop/languages/'.e_LANGUAGE.'.php');
+e107::lan("easyshop", NULL);
+
 // use HEADERF for USER PAGES and e_ADMIN."auth.php" for admin pages
 require_once(HEADERF);
 
@@ -163,9 +163,9 @@ for ($n = 1; $n < 6; $n++){
 
 // Check on incoming discount before filling the basket
 // if ($_POST['discount_code'] <> "" or !isset($_POST['discount_code'])) { // Only activate when discount code is filled in //Bugfix #75
-$sql = new db;
-$sql -> db_Select(DB_TABLE_SHOP_DISCOUNT, "*", "discount_id=".intval($_POST['discount_id'])); // Security fix with intval
-if ($row = $sql-> db_Fetch()){
+$sql = e107::getDb();
+$sql -> select(DB_TABLE_SHOP_DISCOUNT, "*", "discount_id=".intval($_POST['discount_id'])); // Security fix with intval
+if ($row = $sql-> fetch()){
     $discount_id = $row['discount_id'];
     // $discount_name = $row['discount_name'];
     // $discount_class = $row['discount_class'];

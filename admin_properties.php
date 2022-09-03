@@ -23,8 +23,8 @@ if ( ! getperms('P')) { header('location:'.e_BASE.'index.php'); exit(); }
 // Include auth.php rather than header.php ensures an admin user is logged in
 require_once(e_ADMIN.'auth.php');
 
-// Get language file (assume that the English language file is always present)
-include_lan(e_PLUGIN.'easyshop/languages/'.e_LANGUAGE.'.php');
+e107::lan("easyshop", NULL);
+
 require_once('includes/config.php');
 
 // Load the easyshop class
@@ -32,6 +32,8 @@ require_once('easyshop_class.php');
 
 // Set the active menu option for admin_menu.php
 $pageid = 'admin_menu_04';
+
+
 
 // Check URL query
 if(e_QUERY){
@@ -72,9 +74,9 @@ if (isset($_POST['update_prop']) or isset($_POST['create_new'])) { // Update the
     exit();
   }
 
-  $sql = new db;
+	$sql = e107::getDb();
   if (isset($_POST['create_new'])) { // Create a new record in Properties table
-    $sql -> db_Insert(easyshop_properties,
+    $sql -> db_Insert(DB_TABLE_SHOP_PROPERTIES,
     "0,
     '".$tp->toDB($_POST['prop_display_name'])."',
 		'".$tp->toDB($_POST['prop_list'])."',
@@ -90,7 +92,7 @@ if (isset($_POST['update_prop']) or isset($_POST['create_new'])) { // Update the
     $prop_list = implode(",", $prop_list);
     $prop_prices = implode(",", $prop_prices);
     // Actual update
-    $sql -> db_Update(easyshop_properties,
+    $sql -> db_Update(DB_TABLE_SHOP_PROPERTIES,
     "prop_display_name='".$tp->toDB($_POST['prop_display_name'])."',
 		prop_list='".$tp->toDB($prop_list)."',
 		prop_prices='".$tp->toDB($prop_prices)."'
@@ -135,13 +137,13 @@ if ($action == 'delete') {
 if ($action == 'delete_final') {
 	// Variable delete_final is set if answer equals Yes
     // Delete property from property table
-    $sql -> db_Delete(easyshop_properties, "property_id=$action_id");
+    $sql -> db_Delete(DB_TABLE_SHOP_PROPERTIES, "property_id=$action_id");
     // Delete property from product table fields
-    $sql->db_Update(easyshop_items, "prod_prop_1_id='' WHERE prod_prop1_id=$action_id");
-    $sql->db_Update(easyshop_items, "prod_prop_1_id='' WHERE prod_prop1_id=$action_id");
-    $sql->db_Update(easyshop_items, "prod_prop_1_id='' WHERE prod_prop1_id=$action_id");
-    $sql->db_Update(easyshop_items, "prod_prop_1_id='' WHERE prod_prop1_id=$action_id");
-    $sql->db_Update(easyshop_items, "prod_prop_1_id='' WHERE prod_prop1_id=$action_id");
+    $sql->db_Update(DB_TABLE_SHOP_ITEMS, "prod_prop_1_id='' WHERE prod_prop1_id=$action_id");
+    $sql->db_Update(DB_TABLE_SHOP_ITEMS, "prod_prop_1_id='' WHERE prod_prop1_id=$action_id");
+    $sql->db_Update(DB_TABLE_SHOP_ITEMS, "prod_prop_1_id='' WHERE prod_prop1_id=$action_id");
+    $sql->db_Update(DB_TABLE_SHOP_ITEMS, "prod_prop_1_id='' WHERE prod_prop1_id=$action_id");
+    $sql->db_Update(DB_TABLE_SHOP_ITEMS, "prod_prop_1_id='' WHERE prod_prop1_id=$action_id");
     header("Location: admin_properties.php");
 }
 
@@ -150,10 +152,10 @@ if ($action == 'delete_final') {
 // ----------------------------------------------------------------------------+
 if ($action == 'edit') {
 	$arg="SELECT *
-        FROM #easyshop_properties
-        WHERE property_id = $action_id";
-  $sql->db_Select_gen($arg,false);
-	while($row = $sql-> db_Fetch()){
+        FROM #".DB_TABLE_SHOP_PROPERTIES."
+        WHERE property_id = $action_id";  
+  	$sql->gen($arg,false);
+	while($row = $sql-> fetch()){
 	    $property_id = $row['property_id'];
 	    $prop_display_name = $row['prop_display_name'];
     	$prop_list = $row['prop_list'];
@@ -187,9 +189,13 @@ if ($action == 'edit') {
 								<b>".EASYSHOP_ADMIN_PROP_04."</b></td><td><b>".EASYSHOP_ADMIN_PROP_20."</b></td>
 							";
 
-      // Explode puts all listed string elements (separated by comma) in an array
+	// Explode puts all listed string elements (separated by comma) in an array
+	  $price_array	= 0;
       $prop_array = explode(",", $prop_list);
-      $price_array = explode(",", $prop_prices);
+	  if($prop_prices) {
+		$price_array = explode(",", $prop_prices);
+	  }
+ 
       $arrayLength = count($prop_array);
       for ($i = 0; $i < $arrayLength; $i++){
           $edit_text .= "<tr><td></td><td><input class='tbox' size='25' type='text' name='prop_list[]' value='".$prop_array[$i]."'/></td>";
@@ -228,7 +234,7 @@ if ($action == 'edit') {
   // --------------------------------------------------------------------------+
 
   // Determine if there are no properties
-	if($sql -> db_Count(easyshop_properties) > 0) {
+	if($sql -> count(DB_TABLE_SHOP_PROPERTIES) > 0) {
 		$no_properties = 1;
 	}
 
@@ -259,9 +265,9 @@ if ($action == 'edit') {
 									<td class='fcaption'><center><b>".EASYSHOP_ADMIN_PROP_09."</b></center></td>
 								</tr>";
 								// Select the properties in the alphabetical order
-								$sql -> db_Select(easyshop_properties, "*", "ORDER BY prop_display_name", "no-where");
+								$sql -> select(DB_TABLE_SHOP_PROPERTIES, "*", "ORDER BY prop_display_name", "no-where");
 								// While there are records available; fill the rows
-								while($row = $sql-> db_Fetch()){
+								while($row = $sql-> fetch()){
 									$text .= "
 									<tr>
 										<td class='forumheader3'>".$row['prop_display_name']."</td>

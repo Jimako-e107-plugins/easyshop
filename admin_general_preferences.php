@@ -31,8 +31,9 @@ require_once('easyshop_class.php');
 // Load the tabs style css
 $text .= General::easyshop_theme_head();
 
-// Get language file (assume that the English language file is always present)
-include_lan(e_PLUGIN.'easyshop/languages/'.e_LANGUAGE.'.php');
+e107::lan("easyshop", NULL);
+
+$sql = e107::getDb();
 
 // Set the active menu option for admin_menu.php
 $pageid = 'admin_menu_07';
@@ -49,7 +50,7 @@ if ($_POST['edit_preferences'] == '1') {
 	}
 	
 	// Count of preference record with store_id 1
-	$pref_records = $sql->db_Count(DB_TABLE_SHOP_PREFERENCES, "(*)", "WHERE store_id=1");
+	$pref_records = $sql->count(DB_TABLE_SHOP_PREFERENCES, "(*)", "WHERE store_id=1");
 
 	// Update if record 1 is available
 	if ($pref_records == 1) {
@@ -109,17 +110,17 @@ if ($_POST['edit_preferences'] == '1') {
 		store_id=1");
 	  if (isset($_POST['sandbox'])) {
 		if ($_POST['sandbox'] == '2') {
-			$sql->db_Update(DB_TABLE_SHOP_PREFERENCES, "sandbox='2' WHERE store_id=1");
+			$sql->update(DB_TABLE_SHOP_PREFERENCES, "sandbox='2' WHERE store_id=1");
 		}
 	  }
-	  $sql->db_Update(DB_TABLE_SHOP_CURRENCY, "currency_active='1'");
-	  $sql->db_Update(DB_TABLE_SHOP_CURRENCY, "currency_active='2' WHERE currency_id=".$tp->toDB($_POST['currency_id']));
+	  $sql->update(DB_TABLE_SHOP_CURRENCY, "currency_active='1'");
+	  $sql->update(DB_TABLE_SHOP_CURRENCY, "currency_active='2' WHERE currency_id=".$tp->toDB($_POST['currency_id']));
 	} else {
 		// Insert record 1; for some 1.21 users the predefined record in easyshop_preferences was not created on install
 		$arg= "ALTER TABLE #easyshop_preferences AUTO_INCREMENT = 1";
 		// Autoincrement will make this record number 1... // Bugfix of 1.3 where I tried to fill in value '1' hardcoded, which MySQL doesn't like
-		$sql->db_Select_gen($arg,false);
-		$sql -> db_Insert(DB_TABLE_SHOP_PREFERENCES,
+		$sql->gen($arg,false);
+		$sql -> insert(DB_TABLE_SHOP_PREFERENCES,
 		"",
 		$tp->toDB($_POST['store_name']),
 		$tp->toDB($_POST['support_email']),
@@ -180,8 +181,8 @@ if ($_POST['edit_preferences'] == '1') {
 }
 
 // Creation of currencies can be skipped if there are 16 currencies
-$sql = new db;
-if ($sql->db_Count(DB_TABLE_SHOP_CURRENCY) < 16) {
+$sql = e107::getDb();
+if ($sql->count(DB_TABLE_SHOP_CURRENCY) < 16) {
   // Check for each PayPal currency if it is missing and add it to the currency file
   /*
   Supported PayPal currencies:
@@ -202,7 +203,7 @@ if ($sql->db_Count(DB_TABLE_SHOP_CURRENCY) < 16) {
   15. SGD Singapore Dollar
   16. USD U.S. Dollar
   */
-	if ($sql->db_Count(DB_TABLE_SHOP_CURRENCY, "(*)", "WHERE paypal_currency_code = 'AUD'") != 1) {
+	if ($sql->count(DB_TABLE_SHOP_CURRENCY, "(*)", "WHERE paypal_currency_code = 'AUD'") != 1) {
 	    $sql->db_Insert(DB_TABLE_SHOP_CURRENCY,
 	        "0,
 			'".EASYSHOP_GENPREF_30." (&#36;AU)',
@@ -212,7 +213,7 @@ if ($sql->db_Count(DB_TABLE_SHOP_CURRENCY) < 16) {
 			'2',
 			'1'");
 	}
-	if ($sql->db_Count(DB_TABLE_SHOP_CURRENCY, "(*)", "WHERE paypal_currency_code = 'CAD'") != 1) {
+	if ($sql->count(DB_TABLE_SHOP_CURRENCY, "(*)", "WHERE paypal_currency_code = 'CAD'") != 1) {
 	    $sql->db_Insert(DB_TABLE_SHOP_CURRENCY,
 	        "0,
 			'".EASYSHOP_GENPREF_18." (C&#36;)',
@@ -222,7 +223,7 @@ if ($sql->db_Count(DB_TABLE_SHOP_CURRENCY) < 16) {
 			'2',
 			'2'");
 	}
-	if ($sql->db_Count(DB_TABLE_SHOP_CURRENCY, "(*)", "WHERE paypal_currency_code = 'CHF'") != 1) {
+	if ($sql->count(DB_TABLE_SHOP_CURRENCY, "(*)", "WHERE paypal_currency_code = 'CHF'") != 1) {
 	    $sql->db_Insert(DB_TABLE_SHOP_CURRENCY,
 	        "0,
 			'".EASYSHOP_GENPREF_31." (SFr.)',
@@ -232,7 +233,7 @@ if ($sql->db_Count(DB_TABLE_SHOP_CURRENCY) < 16) {
 			'2',
 			'3'");
 	}
-	if ($sql->db_Count(DB_TABLE_SHOP_CURRENCY, "(*)", "WHERE paypal_currency_code = 'CZK'") != 1) {
+	if ($sql->count(DB_TABLE_SHOP_CURRENCY, "(*)", "WHERE paypal_currency_code = 'CZK'") != 1) {
 	    $sql->db_Insert(DB_TABLE_SHOP_CURRENCY,
 	        "0,
 			'".EASYSHOP_GENPREF_32." (K&#10d;)',
@@ -242,7 +243,7 @@ if ($sql->db_Count(DB_TABLE_SHOP_CURRENCY) < 16) {
 			'2',
 			'4'");
 	}
-	if ($sql->db_Count(DB_TABLE_SHOP_CURRENCY, "(*)", "WHERE paypal_currency_code = 'DKK'") != 1) {
+	if ($sql->count(DB_TABLE_SHOP_CURRENCY, "(*)", "WHERE paypal_currency_code = 'DKK'") != 1) {
 	    $sql->db_Insert(DB_TABLE_SHOP_CURRENCY,
 	        "0,
 			'".EASYSHOP_GENPREF_33." (kr.)',
@@ -252,7 +253,7 @@ if ($sql->db_Count(DB_TABLE_SHOP_CURRENCY) < 16) {
 			'2',
 			'5'");
 	}
-	if ($sql->db_Count(DB_TABLE_SHOP_CURRENCY, "(*)", "WHERE paypal_currency_code = 'EUR'") != 1) {
+	if ($sql->count(DB_TABLE_SHOP_CURRENCY, "(*)", "WHERE paypal_currency_code = 'EUR'") != 1) {
 	    $sql->db_Insert(DB_TABLE_SHOP_CURRENCY,
 	        "0,
 			'".EASYSHOP_GENPREF_19." (&#8364;)',
@@ -262,7 +263,7 @@ if ($sql->db_Count(DB_TABLE_SHOP_CURRENCY) < 16) {
 			'2',
 			'6'");
 	}
-	if ($sql->db_Count(DB_TABLE_SHOP_CURRENCY, "(*)", "WHERE paypal_currency_code = 'GBP'") != 1) {
+	if ($sql->count(DB_TABLE_SHOP_CURRENCY, "(*)", "WHERE paypal_currency_code = 'GBP'") != 1) {
 	    $sql->db_Insert(DB_TABLE_SHOP_CURRENCY,
 	        "0,
 			'".EASYSHOP_GENPREF_20." (&#163;)',
@@ -272,7 +273,7 @@ if ($sql->db_Count(DB_TABLE_SHOP_CURRENCY) < 16) {
 			'2',
 			'7'");
 	}
-	if ($sql->db_Count(DB_TABLE_SHOP_CURRENCY, "(*)", "WHERE paypal_currency_code = 'HKD'") != 1) {
+	if ($sql->count(DB_TABLE_SHOP_CURRENCY, "(*)", "WHERE paypal_currency_code = 'HKD'") != 1) {
 	    $sql->db_Insert(DB_TABLE_SHOP_CURRENCY,
 	        "0,
 			'".EASYSHOP_GENPREF_34." (HK&#36;)',
@@ -282,7 +283,7 @@ if ($sql->db_Count(DB_TABLE_SHOP_CURRENCY) < 16) {
 			'2',
 			'8'");
 	}
-	if ($sql->db_Count(DB_TABLE_SHOP_CURRENCY, "(*)", "WHERE paypal_currency_code = 'HUF'") != 1) {
+	if ($sql->count(DB_TABLE_SHOP_CURRENCY, "(*)", "WHERE paypal_currency_code = 'HUF'") != 1) {
 	    $sql->db_Insert(DB_TABLE_SHOP_CURRENCY,
 	        "0,
 			'".EASYSHOP_GENPREF_35." (Ft)',
@@ -292,7 +293,7 @@ if ($sql->db_Count(DB_TABLE_SHOP_CURRENCY) < 16) {
 			'2',
 			'9'");
 	}
-	if ($sql->db_Count(DB_TABLE_SHOP_CURRENCY, "(*)", "WHERE paypal_currency_code = 'JPY'") != 1) {
+	if ($sql->count(DB_TABLE_SHOP_CURRENCY, "(*)", "WHERE paypal_currency_code = 'JPY'") != 1) {
 	    $sql->db_Insert(DB_TABLE_SHOP_CURRENCY,
 	        "0,
 			'".EASYSHOP_GENPREF_29." (&#165;)',
@@ -302,7 +303,7 @@ if ($sql->db_Count(DB_TABLE_SHOP_CURRENCY) < 16) {
 			'2',
 			'10'");
 	}
-	if ($sql->db_Count(DB_TABLE_SHOP_CURRENCY, "(*)", "WHERE paypal_currency_code = 'NOK'") != 1) {
+	if ($sql->count(DB_TABLE_SHOP_CURRENCY, "(*)", "WHERE paypal_currency_code = 'NOK'") != 1) {
 	    $sql->db_Insert(DB_TABLE_SHOP_CURRENCY,
 	        "0,
 			'".EASYSHOP_GENPREF_36." (Nkr.)',
@@ -312,7 +313,7 @@ if ($sql->db_Count(DB_TABLE_SHOP_CURRENCY) < 16) {
 			'2',
 			'11'");
 	}
-	if ($sql->db_Count(DB_TABLE_SHOP_CURRENCY, "(*)", "WHERE paypal_currency_code = 'NZD'") != 1) {
+	if ($sql->count(DB_TABLE_SHOP_CURRENCY, "(*)", "WHERE paypal_currency_code = 'NZD'") != 1) {
 	    $sql->db_Insert(DB_TABLE_SHOP_CURRENCY,
 	        "0,
 			'".EASYSHOP_GENPREF_37." (NZ&#36;)',
@@ -322,7 +323,7 @@ if ($sql->db_Count(DB_TABLE_SHOP_CURRENCY) < 16) {
 			'2',
 			'12'");
 	}
-	if ($sql->db_Count(DB_TABLE_SHOP_CURRENCY, "(*)", "WHERE paypal_currency_code = 'PLN'") != 1) {
+	if ($sql->count(DB_TABLE_SHOP_CURRENCY, "(*)", "WHERE paypal_currency_code = 'PLN'") != 1) {
 	    $sql->db_Insert(DB_TABLE_SHOP_CURRENCY,
 	        "0,
 			'".EASYSHOP_GENPREF_38." (P&#142;)',
@@ -332,7 +333,7 @@ if ($sql->db_Count(DB_TABLE_SHOP_CURRENCY) < 16) {
 			'2',
 			'13'");
 	}
-	if ($sql->db_Count(DB_TABLE_SHOP_CURRENCY, "(*)", "WHERE paypal_currency_code = 'SEK'") != 1) {
+	if ($sql->count(DB_TABLE_SHOP_CURRENCY, "(*)", "WHERE paypal_currency_code = 'SEK'") != 1) {
 	    $sql->db_Insert(DB_TABLE_SHOP_CURRENCY,
 	        "0,
 			'".EASYSHOP_GENPREF_39." (Skr.)',
@@ -342,7 +343,7 @@ if ($sql->db_Count(DB_TABLE_SHOP_CURRENCY) < 16) {
 			'2',
 			'14'");
 	}
-	if ($sql->db_Count(DB_TABLE_SHOP_CURRENCY, "(*)", "WHERE paypal_currency_code = 'SGD'") != 1) {
+	if ($sql->count(DB_TABLE_SHOP_CURRENCY, "(*)", "WHERE paypal_currency_code = 'SGD'") != 1) {
 	    $sql->db_Insert(DB_TABLE_SHOP_CURRENCY,
 	        "0,
 			'".EASYSHOP_GENPREF_40." (S&#36;)',
@@ -352,7 +353,7 @@ if ($sql->db_Count(DB_TABLE_SHOP_CURRENCY) < 16) {
 			'2',
 			'15'");
 	}
-	if ($sql->db_Count(DB_TABLE_SHOP_CURRENCY, "(*)", "WHERE paypal_currency_code = 'USD'") != 1) {
+	if ($sql->count(DB_TABLE_SHOP_CURRENCY, "(*)", "WHERE paypal_currency_code = 'USD'") != 1) {
 	    $sql->db_Insert(DB_TABLE_SHOP_CURRENCY,
 	        "0,
 			'".EASYSHOP_GENPREF_17." (&#36;)',
@@ -364,8 +365,8 @@ if ($sql->db_Count(DB_TABLE_SHOP_CURRENCY) < 16) {
 	}
 }
 
-$sql -> db_Select(DB_TABLE_SHOP_PREFERENCES, "*", "store_id=1");
-if ($row = $sql-> db_Fetch()){
+$sql -> select(DB_TABLE_SHOP_PREFERENCES, "*", "store_id=1");
+if ($row = $sql-> fetch()){
     $store_name = $row['store_name'];
     $store_address_1 = $row['store_address_1'];
     $store_address_2 = $row['store_address_2'];
@@ -940,9 +941,9 @@ $text3 .= "
 			<td class='tborder' style='width: 200px'>
 				<select class='tbox' name='currency_id'>";
 						
-				$sql2 = new db;
-				$sql2 -> db_Select(DB_TABLE_SHOP_CURRENCY, "*", "ORDER BY currency_order", "no-where");
-				while ($row2 = $sql2->db_Fetch()) {
+				$sql2= e107::getDb('2');
+				$sql2 -> select(DB_TABLE_SHOP_CURRENCY, "*", "ORDER BY currency_order", "no-where");
+				while ($row2 = $sql2->fetch()) {
 					if($row2['currency_active'] == '2') {
 						$text3 .= "
 						<option value='".$row2['currency_id']."' selected='selected'>".$row2['display_name']."</option>";

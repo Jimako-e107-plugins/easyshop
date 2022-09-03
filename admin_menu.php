@@ -23,8 +23,8 @@ if ( ! getperms('P')) { header('location:'.e_BASE.'index.php'); exit(); }
 // Include auth.php rather than header.php ensures an admin user is logged in
 require_once(e_ADMIN.'auth.php');
 
-// Get language file (assume that the English language file is always present)
-include_lan(e_PLUGIN.'easyshop/languages/'.e_LANGUAGE.'.php');
+e107::lan("easyshop", NULL);
+
 // set the pageid for the menu as global variable (first pageid is set by admin_config.php)
 global $pageid;
 

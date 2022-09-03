@@ -27,10 +27,12 @@ require_once(e_HANDLER.'ren_help.php');
 // Include userclass_class.php which is necessary for function r_userclass
 require_once(e_HANDLER.'userclass_class.php');
 
-// Get language file (assume that the English language file is always present)
-include_lan(e_PLUGIN.'easyshop/languages/'.e_LANGUAGE.'.php');
+e107::lan("easyshop", NULL);
+
 // include define tables info
 require_once('includes/config.php');
+
+$sql = e107::getDb();
 
 // Set the active menu option for admin_menu.php
 $pageid = 'admin_menu_01';
@@ -84,9 +86,11 @@ if ($_POST['handling_override'] == "") {
 }
 
 // Clean the item_image array from empty elements
+if($_POST['item_image']) {
 General::Array_Clean("",$_POST['item_image']);
 // Merge the posted image names together
 $_POST['item_image'] = implode(",", $_POST['item_image']);
+}
 
 //-----------------------------------------------------------------------------+
 //---------------------- Handle file upload -----------------------------------+
@@ -232,7 +236,7 @@ if ($_POST['add_item'] == '1') {
     exit();
 
 } else if ($_POST['item_dimensions'] == '1') {
-    $sql->db_Update(DB_TABLE_SHOP_PREFERENCES,
+    $sql->update(DB_TABLE_SHOP_PREFERENCES,
     "items_per_page='".intval($tp->toDB($_POST['items_per_page']))."',
      num_item_columns='".intval($tp->toDB($_POST['num_item_columns']))."'
   	 WHERE
@@ -248,39 +252,39 @@ if ($_POST['add_item'] == '1') {
     }
 
     for ($x = 0; $x < count($newItemOrderArray); $x++) {
-        $sql -> db_Update(DB_TABLE_SHOP_ITEMS,
+        $sql ->update(DB_TABLE_SHOP_ITEMS,
             "item_order='".intval($tp->toDB($newItemOrderArray[$x][1]))."'
             WHERE item_id='".intval($tp->toDB($newItemOrderArray[$x][0]))."'");
     }
 
     // Change item active status
-    $sql2 = new db;
-    $sql2 -> db_Update(DB_TABLE_SHOP_ITEMS,
+    $sql2= e107::getDb('2');
+    $sql2 -> update(DB_TABLE_SHOP_ITEMS,
 			"item_active_status='1'
 			WHERE category_id='".intval($tp->toDB($_POST['category_id']))."'");
 
     foreach ($_POST['item_active_status'] as $value) {
-    	$sql2 -> db_Update(DB_TABLE_SHOP_ITEMS,
+    	$sql2 -> update(DB_TABLE_SHOP_ITEMS,
 				"item_active_status='2'
 				WHERE item_id='".intval($tp->toDB($value))."'");
     }
 
     // Change item 'Out Of Stock' status
-    $sql3 = new db;
-    $sql3 -> db_Update(DB_TABLE_SHOP_ITEMS,
+    $sql3= e107::getDb('3');
+    $sql3 -> update(DB_TABLE_SHOP_ITEMS,
           "item_out_of_stock='1'
 	  	     WHERE category_id='".intval($tp->toDB($_POST['category_id']))."'");
 
     foreach ($_POST['item_out_of_stock'] as $value) {
-    	$sql3 -> db_Update(DB_TABLE_SHOP_ITEMS,
+    	$sql3 -> update(DB_TABLE_SHOP_ITEMS,
             "item_out_of_stock='2'
              WHERE item_id='".intval($tp->toDB($value))."'");
     }
 
     // Change item 'Out Of Stock' explanation
-    $sql4 = new db;
+    $sql4 = e107::getDb('4');
     foreach ($_POST['item_out_of_stock_explanation'] as $key => $value) {
-      $sql4 -> db_Update(DB_TABLE_SHOP_ITEMS,
+      $sql4 -> update(DB_TABLE_SHOP_ITEMS,
             "item_out_of_stock_explanation='".$tp->toDB($value)."'
              WHERE item_id='".intval($tp->toDB($key))."'");
     }
@@ -369,7 +373,7 @@ if ($_POST['add_item'] == '1') {
         $download_datasheet = 1;
         $_POST['download_datasheet_filename'] = "";
     }
-    $sql -> db_Update(DB_TABLE_SHOP_ITEMS,
+    $sql -> update(DB_TABLE_SHOP_ITEMS,
         "category_id              = '".intval($_POST['category_id'])."',
         item_name                 = '".$tp->toDB($_POST['item_name'])."',
         item_description          = '".$tp->toDB($_POST['item_description'])."',
@@ -445,8 +449,8 @@ if ($_POST['add_item'] == '1') {
 	// Delete item from tables when delete_item = 2 (user selected Yes to delete)
 	$itemId = intval($tp->toDB($_GET['item_id']));
 	// Retrieve download filename info from the product
-	$sql -> db_Select(DB_TABLE_SHOP_ITEMS, "*", "item_id=".$itemId);
-	if ($row = $sql-> db_Fetch()){
+	$sql -> select(DB_TABLE_SHOP_ITEMS, "*", "item_id=".$itemId);
+	if ($row = $sql-> fetch()){
 		$download_product = $row['download_product'];
 		$download_filename = $row['download_filename'];
 	}
@@ -465,9 +469,9 @@ if ($_POST['add_item'] == '1') {
 //---------------------- Get and Set Defaults ---------------------------------+
 //-----------------------------------------------------------------------------+
 // Retrieve shop preferences just once
-$sql = new db;
-$sql -> db_Select(DB_TABLE_SHOP_PREFERENCES, "*", "store_id=1");
-if ($row = $sql-> db_Fetch()){
+$sql = e107::getDb();
+$sql -> select(DB_TABLE_SHOP_PREFERENCES, "*", "store_id=1");
+if ($row = $sql-> fetch()){
     $store_name = $row['store_name'];
     $store_address_1 = $row['store_address_1'];
     $store_address_2 = $row['store_address_2'];
@@ -552,8 +556,8 @@ if ($num_item_columns     == '') { ($num_item_columns     =  3); }
 if ($items_per_page       == '') { ($items_per_page       = 25);}
 
 // Define actual currency and position of currency character once
-$sql -> db_Select(DB_TABLE_SHOP_CURRENCY, "*", "currency_active=2");
-while($row = $sql-> db_Fetch()){
+$sql -> select(DB_TABLE_SHOP_CURRENCY, "*", "currency_active=2");
+while($row = $sql-> fetch()){
 	$unicode_character = $row['unicode_character'];
 	$paypal_currency_code = $row['paypal_currency_code'];
 }
@@ -576,20 +580,20 @@ else {
 if ($action == "cat") {
 //if ($_GET['choose_category'] == 1) {
     // Check if there are no products in a category
-    if($sql -> db_Select(DB_TABLE_SHOP_ITEM_CATEGORIES, "*", "category_id=".$action_id) > 0) {
+    if($sql -> select(DB_TABLE_SHOP_ITEM_CATEGORIES, "*", "category_id=".$action_id) > 0) {
 		$no_items = 1;
     }
 		
 	// Check if there are no active products in a category
     // item_active_status = 1 --> active 'off'
     // item_active_status = 2 --> active 'on'
-    if($sql -> db_Count(DB_TABLE_SHOP_ITEMS, '(*)', 'WHERE category_id='.$action_id.' AND item_active_status = 2') == 0) {
+    if($sql -> count(DB_TABLE_SHOP_ITEMS, '(*)', 'WHERE category_id='.$action_id.' AND item_active_status = 2') == 0) {
 		$no_active_items = 1;
 		}
 
 /*
-	$sql -> db_Select(DB_TABLE_SHOP_ITEMS);
-	while($row = $sql-> db_Fetch()){
+	$sql -> select(DB_TABLE_SHOP_ITEMS);
+	while($row = $sql-> fetch()){
 		$category_id = $row['category_id'];
 		$item_id = $row['item_id'];
 		$item_name = $row['item_name'];
@@ -603,8 +607,8 @@ if ($action == "cat") {
 	}
 */
 
-	$sql -> db_Select(DB_TABLE_SHOP_ITEM_CATEGORIES, "*", "category_id=".$action_id);
-	while($row = $sql-> db_Fetch()){
+	$sql -> select(DB_TABLE_SHOP_ITEM_CATEGORIES, "*", "category_id=".$action_id);
+	while($row = $sql-> fetch()){
 		$category_name = $row['category_name'];
 		$category_main_id = $row['category_main_id'];
 	}
@@ -641,8 +645,8 @@ if ($action == "cat") {
 									<td class='fcaption'><span style='text-align:center;'><b>".EASYSHOP_CONF_ITM_27."</b></span></td>
 								</tr>";
 								
-								$sql -> db_Select(DB_TABLE_SHOP_ITEMS, "*", "category_id=".$action_id." ORDER BY item_order");
-								while($row = $sql-> db_Fetch()){
+								$sql -> select(DB_TABLE_SHOP_ITEMS, "*", "category_id=".$action_id." ORDER BY item_order");
+								while($row = $sql-> fetch()){
 									$text .= "
 									<tr>
 										<td class='forumheader3' valign='top'>";
@@ -705,8 +709,8 @@ if ($action == "cat") {
 											<div style='text-align:center;'>
 						                        <select class='tbox' name='item_order[]'>";
 						
-						                        $sql2 = new db;
-						                        $num_rows = $sql2 -> db_Count(DB_TABLE_SHOP_ITEMS, "(*)", "WHERE category_id=".$action_id);
+						                        $sql2= e107::getDb('2');
+						                        $num_rows = $sql2 -> count(DB_TABLE_SHOP_ITEMS, "(*)", "WHERE category_id=".$action_id);
 						                        $count = 1;
 						                        while ($count <= $num_rows) {
 						                            if ($row['item_order'] == $count) {
@@ -754,7 +758,7 @@ if ($action == "cat") {
 						<br />";
             // Alert if there are no active products in the category
             if ($no_active_items == 1) {
-							$text .= "<img src='".e_IMAGE."admin_images/docs_16.png' title='' alt='' /> ".EASYSHOP_CONF_ITM_26;
+							$text .= "<img src='".e_PLUGIN."easyshop/admin_images/docs_16.png' title='' alt='' /> ".EASYSHOP_CONF_ITM_26;
             }
 
 					}
@@ -769,16 +773,16 @@ if ($action == "cat") {
   //---------------------------------------------------------------------------+
   //-------------------------- Edit Existing Product --------------------------+
   //---------------------------------------------------------------------------+
-	$sql -> db_Select(DB_TABLE_SHOP_ITEM_CATEGORIES, "*", "category_id=".$_GET['category_id']);
-	while($row = $sql-> db_Fetch()){
+	$sql -> select(DB_TABLE_SHOP_ITEM_CATEGORIES, "*", "category_id=".$_GET['category_id']);
+	while($row = $sql-> fetch()){
 	    $category_name = $row['category_name'];
 	}
 	// IPN addition - to pass $item_track_stock through to product array
     global $item_track_stock;
     global $item_instock;
     
-	$sql -> db_Select(DB_TABLE_SHOP_ITEMS, "*", "item_id=".$_GET['item_id']);
-	if ($row = $sql-> db_Fetch()){
+	$sql -> select(DB_TABLE_SHOP_ITEMS, "*", "item_id=".$_GET['item_id']);
+	if ($row = $sql-> fetch()){
 		$category_id = $row['category_id'];
 		$item_id = $row['item_id'];
 		$item_name = $row['item_name'];
@@ -840,7 +844,7 @@ if ($action == "cat") {
   //------------------------ Show Categories ----------------------------------+
   //---------------------------------------------------------------------------+
 if($action == "" or $action == "catpage") {
-	if($sql -> db_Count(DB_TABLE_SHOP_ITEM_CATEGORIES, "(*)", "WHERE category_active_status = '2'") > 0) {
+	if($sql -> count(DB_TABLE_SHOP_ITEM_CATEGORIES, "(*)", "WHERE category_active_status = '2'") > 0) {
 		$no_categories = 1;
 	}
 
@@ -890,8 +894,8 @@ if($action == "" or $action == "catpage") {
 							}
 							
 							$count_rows = 0;
-							$sql -> db_Select(DB_TABLE_SHOP_ITEM_CATEGORIES, "*", "category_active_status=2 ORDER BY category_order LIMIT $category_offset, $categories_per_page");
-			while($row = $sql-> db_Fetch()){
+							$sql -> select(DB_TABLE_SHOP_ITEM_CATEGORIES, "*", "category_active_status=2 ORDER BY category_order LIMIT $category_offset, $categories_per_page");
+			while($row = $sql-> fetch()){
 
 								$text .= "
 									<td width='$column_width'>
@@ -915,11 +919,11 @@ if($action == "" or $action == "catpage") {
 											<br /> ";
 
 			  // Second query: Count the number of products in the category
-			  $sql2 = new db;
-								$prod_cat_count = $sql2 -> db_Count(DB_TABLE_SHOP_ITEMS, "(*)", "WHERE category_id='".$row['category_id']."'");
+			  $sql2= e107::getDb('2');
+								$prod_cat_count = $sql2 -> count(DB_TABLE_SHOP_ITEMS, "(*)", "WHERE category_id='".$row['category_id']."'");
 			  // Third query: Count the number of inactive products in the category
-			  $sql3 = new db;
-								$prod_inact_cat_count = $sql3 -> db_Count(DB_TABLE_SHOP_ITEMS, "(*)", "WHERE category_id='".$row['category_id']."' AND item_active_status='1'");
+			  $sql3= e107::getDb('3');
+								$prod_inact_cat_count = $sql3 -> count(DB_TABLE_SHOP_ITEMS, "(*)", "WHERE category_id='".$row['category_id']."' AND item_active_status='1'");
 			  // Present total number of products
 										$text .= "
 										 ".EASYSHOP_CONF_CAT_04." ".$prod_cat_count." <br />";
@@ -952,7 +956,7 @@ if($action == "" or $action == "catpage") {
 					</div>
 					<br />";
 					
-					$total_categories = $sql -> db_Count(DB_TABLE_SHOP_ITEM_CATEGORIES, "(*)", "WHERE category_active_status=2");
+					$total_categories = $sql -> count(DB_TABLE_SHOP_ITEM_CATEGORIES, "(*)", "WHERE category_active_status=2");
 					$action = "catpage"; // Set action hardcoded to catpage in order to view right links
 					$text .= General::multiple_paging($total_categories,$categories_per_page,$action,$action_id,$page_id,$page_devide_char);
 													
@@ -960,7 +964,7 @@ if($action == "" or $action == "catpage") {
 					<br />";
 				}
 			$text .= "
-			<img src='".e_IMAGE."admin_images/docs_16.png' title='' alt='' /> ".EASYSHOP_CONF_CAT_03."
+			<img src='".e_PLUGIN."easyshop/admin_images/docs_16.png' title='' alt='' /> ".EASYSHOP_CONF_CAT_03."
 			</fieldset>
 		</div>
 		<br />";
@@ -1024,9 +1028,9 @@ $text = "
 			</td>
 			<td>
 				<select class='tbox' name='category_id'>";
-            $sql2 = new db;
-            $sql2 -> db_Select(DB_TABLE_SHOP_ITEM_CATEGORIES, "*", "WHERE category_active_status = '2' ORDER BY category_order", false); // Select only active categories
-            while ($row2 = $sql2->db_Fetch()) {
+            $sql2= e107::getDb('2');
+            $sql2 -> select(DB_TABLE_SHOP_ITEM_CATEGORIES, "*", "WHERE category_active_status = '2' ORDER BY category_order", false); // Select only active categories
+            while ($row2 = $sql2->fetch()) {
             	if ($row2['category_id'] == $category_id) {
           			$text .= "
                     <option value='".$row2['category_id']."' selected='selected'>".$row2['category_name']."</option>";
@@ -1057,7 +1061,7 @@ $text = "
 		</tr>
 		<tr>
 			<td>
-				<b>".EASYSHOP_CONF_ITM_08.": <img src='".e_IMAGE."admin_images/docs_16.png' title='".EASYSHOP_CONF_ITM_09."' alt='".EASYSHOP_CONF_ITM_09."' /></b>
+				<b>".EASYSHOP_CONF_ITM_08.": <img src='".e_PLUGIN."easyshop/admin_images/docs_16.png' title='".EASYSHOP_CONF_ITM_09."' alt='".EASYSHOP_CONF_ITM_09."' /></b>
 			</td>
 			<td>
 				<input class='tbox' size='25' type='text' name='sku_number' value='".$sku_number."' />
@@ -1081,7 +1085,7 @@ $text = "
 		</tr>
 		<tr>
 			<td colspan=2>
-				<img src='".e_IMAGE."admin_images/docs_16.png' title='' alt='' /> ".EASYSHOP_CONF_ITM_12."
+				<img src='".e_PLUGIN."easyshop/admin_images/docs_16.png' title='' alt='' /> ".EASYSHOP_CONF_ITM_12."
 			</td>
 		</tr>
 		<tr>
@@ -1094,7 +1098,7 @@ $text = "
 		</tr>
 		<tr>
 			<td colspan=2>
-				<img src='".e_IMAGE."admin_images/docs_16.png' title='' alt='' /> ".EASYSHOP_CONF_ITM_12."
+				<img src='".e_PLUGIN."easyshop/admin_images/docs_16.png' title='' alt='' /> ".EASYSHOP_CONF_ITM_12."
 			</td>
 		</tr>
 		<tr>
@@ -1151,7 +1155,7 @@ $text = "
       $text .= "
 			<tr>
 				<td colspan=2>
-					<img src='".e_IMAGE."admin_images/docs_16.png' title='' alt='' /> ".EASYSHOP_CONF_ITM_17."
+					<img src='".e_PLUGIN."easyshop/admin_images/docs_16.png' title='' alt='' /> ".EASYSHOP_CONF_ITM_17."
 				</td>
 			</tr>
     <tr>
@@ -1181,9 +1185,9 @@ $text = "
       <td>
 		<select class='tbox' name='$fpropname'>
         <option value='' selected='selected'></option>";
-            $sql3 = new db;
-            $sql3 -> db_Select(DB_TABLE_SHOP_PROPERTIES, "*", " ORDER BY prop_display_name", false); // Select all properties
-            while ($row3 = $sql3->db_Fetch()) {
+            $sql3= e107::getDb('3');
+            $sql3 -> select(DB_TABLE_SHOP_PROPERTIES, "*", " ORDER BY prop_display_name", false); // Select all properties
+            while ($row3 = $sql3->fetch()) {
               //$positioner = ${"prod_prop_".$n."_id"};
               // Show display_name and first 10 characters of the string; so it is no problem to select from same name e.g. 'Color' with different property list
             	if ($row3['property_id'] == ${"prod_prop_".$n."_id"}) {
@@ -1207,9 +1211,9 @@ $text = "
       <td>
 		<select class='tbox' name='prod_discount_id'>
         <option value='' selected='selected'></option>";
-            $sql4 = new db;
-            $sql4 -> db_Select(DB_TABLE_SHOP_DISCOUNT, "*", " ORDER BY discount_name", false); // Select all discounts
-            while ($row4 = $sql4->db_Fetch()) {
+            $sql4 = e107::getDb('4');
+            $sql4 -> select(DB_TABLE_SHOP_DISCOUNT, "*", " ORDER BY discount_name", false); // Select all discounts
+            while ($row4 = $sql4->fetch()) {
             	if ($row4['discount_id'] == $prod_discount_id) {
           			$text .= "<option value='".$row4['discount_id']."' selected='selected'>".$row4['discount_name']."</option>";
             	} else {
@@ -1219,9 +1223,9 @@ $text = "
         $text .= "
         </select>";
         if (trim($prod_discount_id) > "") {
-            $sql5 = new db;
-            $sql5 -> db_Select(DB_TABLE_SHOP_DISCOUNT, "*", "discount_id = ".$prod_discount_id); // Select the selected discount
-            if ($row5 = $sql5->db_Fetch()) {
+            $sql5 = e107::getDb('5');
+            $sql5 -> select(DB_TABLE_SHOP_DISCOUNT, "*", "discount_id = ".$prod_discount_id); // Select the selected discount
+            if ($row5 = $sql5->fetch()) {
               if ($row5['discount_valid_till']== 0) { // Set the end date to maximum if not filled in
                 $row5['discount_valid_till'] = 9999999999;
               }
