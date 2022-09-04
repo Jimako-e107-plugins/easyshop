@@ -152,7 +152,9 @@ for ($n = 1; $n < 6; $n++){
       // Create price array
       ${"price".$n."_array"} = explode(",", $_POST[$prop_prices]);
       // Adjust the price with the corresponding price
-      $_POST['item_price'] = (double)$_POST['item_price'] + ${"price".$n."_array"}[$key];
+	  //fix Uncaught TypeError: Unsupported operand types: float + string
+      $_POST['item_price'] =
+			 (float)$_POST['item_price'] . ${"price".$n."_array"}[$key];
       // Adjust the item id
       $_POST['item_id'] = intval($_POST['item_id']).trim($_POST[$prod_prop]);
       // Adjust item name
