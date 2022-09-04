@@ -1000,7 +1000,7 @@ if($action == "" or $action == "catpage") {
                                    $download_product, $download_filename, $store_image_path, $prod_promo_class, $item_minimum, $download_datasheet, $download_datasheet_filename, $item_quotation);
 
 		$text .= "
-					<br />
+					<br />true);
 					<div style='text-align:center;'>
 						<input type='hidden' name='add_item' value='1'>
 						<input class='btn btn-success' type='submit' value='".EASYSHOP_CONF_ITM_00."'>
@@ -1030,7 +1030,7 @@ $text = "
 			<td>
 				<select class='tbox' name='category_id'>";
             $sql2= e107::getDb('2');
-            $sql2 -> select(DB_TABLE_SHOP_ITEM_CATEGORIES, "*", "WHERE category_active_status = '2' ORDER BY category_order", false); // Select only active categories
+            $sql2 -> select(DB_TABLE_SHOP_ITEM_CATEGORIES, "*", "WHERE category_active_status = '2' ORDER BY category_order", true); // Select only active categories
             while ($row2 = $sql2->fetch()) {
             	if ($row2['category_id'] == $category_id) {
           			$text .= "
@@ -1187,7 +1187,7 @@ $text = "
 		<select class='tbox' name='$fpropname'>
         <option value='' selected='selected'></option>";
             $sql3= e107::getDb('3');
-            $sql3 -> select(DB_TABLE_SHOP_PROPERTIES, "*", " ORDER BY prop_display_name", false); // Select all properties
+            $sql3 -> select(DB_TABLE_SHOP_PROPERTIES, "*", " ORDER BY prop_display_name", true); // Select all properties
             while ($row3 = $sql3->fetch()) {
               //$positioner = ${"prod_prop_".$n."_id"};
               // Show display_name and first 10 characters of the string; so it is no problem to select from same name e.g. 'Color' with different property list
