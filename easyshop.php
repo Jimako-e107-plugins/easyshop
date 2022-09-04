@@ -31,8 +31,15 @@ $sql = e107::getDb();
 if(e_QUERY){
 	$tmp = explode(".", e_QUERY);
 	$action = $tmp[0];
-	$action_id = intval($tmp[1]); // Intval to protect from SQL Injection
-	$page_id = intval($tmp[2]); // Used for page id of prod
+
+	if(isset($tmp[1])) {
+		$action_id = intval($tmp[1]); // Intval to protect from SQL Injection 
+	}
+	if (isset($tmp[2]))
+	{
+		$page_id = intval($tmp[2]); // Used for page id of prod
+	}	
+
 	unset($tmp);
 }
 
@@ -46,13 +53,13 @@ if (strlen($action) > 0 && !in_array($action, array("edit", "cat", "prodpage", "
 }
 // Another extra check on action id
 if (strlen($action_id) > 0 && $action_id < 1 && $action_id != "") {
-	header("Location: ".e_BASE); // Redirect to the home page; in next version a specific error message
+ 	header("Location: ".e_BASE); // Redirect to the home page; in next version a specific error message
 	//$ns -> tablerender ('Error encountered', 'Sorry, unexpected action id '.$action_id.' specified.'); // require('FOOTERF');
 	exit();
 }
 // Another extra check on page id
 if (strlen($page_id) > 0 && $page_id < 0 && $page_id != "") {
-	header("Location: ".e_BASE); // Redirect to the home page; in next version a specific error message
+ 	header("Location: ".e_BASE); // Redirect to the home page; in next version a specific error message
 	//$ns -> tablerender ('Error encountered', 'Sorry, unexpected page id '.$page_id.' specified.'); // require('FOOTERF');
 	exit();
 }
@@ -520,14 +527,21 @@ if ($action == 'edit') {
 	//  header("Location: ".e_BASE); // Redirect to the home page
 	//  exit();
 	//}
-	$count_items = count($_SESSION['shopping_cart']);     // Count number of different products in basket
+	$count_items = 0;
+	if(is_array($_SESSION['shopping_cart'])) {
+		$count_items = count($_SESSION['shopping_cart']);     // Count number of different products in basket
+	}
+	
 	$sum_quantity = $_SESSION['sc_total']['items'];       // Display cached sum of total quantity of items in basket
 	$sum_shipping = $_SESSION['sc_total']['shipping'];    // Display cached sum of shipping costs for 1st item
 	$sum_shipping2 = $_SESSION['sc_total']['shipping2'];  // Display cached sum of shipping costs for additional items (>1)
 	$sum_handling = $_SESSION['sc_total']['handling'];    // Display cached sum of handling costs
 	$sum_shipping_handling = number_format(($sum_shipping + $sum_shipping2 + $sum_handling), 2, '.', ''); // Calculate total handling and shipping price
 	$sum_price = number_format(($_SESSION['sc_total']['sum'] + $sum_shipping_handling), 2, '.', ''); // Display cached sum of total price of items in basket + shipping + handling costs
-	$average_price = number_format(($sum_price / $sum_quantity), 2, '.', ''); // Calculate the average price per product
+	if($sum_quantity > 0) {
+		$average_price = number_format(($sum_price / $sum_quantity), 2, '.', ''); // Calculate the average price per product
+	}
+
 
 	// When total quantity is zero hide the basket
 	if ($sum_quantity == 0) {

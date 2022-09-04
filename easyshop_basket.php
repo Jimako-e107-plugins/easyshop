@@ -220,9 +220,9 @@ if ($_POST['fill_basket'] == 'C' or $_POST['fill_basket'] == 'P') {
     isset($_SESSION['shopping_cart'][$action_id]['item_track_stock'])?
             $track_stock = TRUE:
             $track_stock = NULL;
-
+ 
     // Fill the basket with selected product
-    if (!array_key_exists($_POST['item_id'], $_SESSION['shopping_cart'])) {
+    if (is_array($_SESSION['shopping_cart']) && !array_key_exists($_POST['item_id'], $_SESSION['shopping_cart'])) {
       // Key for item id does not exists; item needs to be added to the array
       $_SESSION['shopping_cart'][$_POST['item_id']] = array('item_name'=>$tp->toDB($_POST['item_name']), 'quantity'=>intval($_POST['item_qty']), 'item_price'=>(double)$_POST['item_price'], 'sku_number'=>$tp->toDB($_POST['sku_number']), 'shipping'=>(double)$_POST['shipping'], 'shipping2'=>(double)$_POST['shipping2'], 'handling'=>(double)$_POST['handling'], 'db_id'=> intval($_POST['db_id']));
       // Handling costs are calculated once per each basket
