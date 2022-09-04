@@ -97,7 +97,7 @@ if ($action == 'minus') {
   header("Location: ".$target);
   exit();
 }
-
+ 
 // Add on a product row
 if ($action == 'add') {
   // Add 1 of the product from the totals
@@ -112,6 +112,8 @@ if ($action == 'add') {
   header("Location: ".$target);
   exit();
 }
+
+$_POST['item_id'] = intval($_POST['item_id']); // Security enhancement
 
 // Check incoming properties before filling the basket
 for ($n = 1; $n < 6; $n++){
@@ -165,8 +167,9 @@ for ($n = 1; $n < 6; $n++){
 
 // Check on incoming discount before filling the basket
 // if ($_POST['discount_code'] <> "" or !isset($_POST['discount_code'])) { // Only activate when discount code is filled in //Bugfix #75
-$sql = e107::getDb();
+$sql = e107::getDb('discount');
 $sql -> select(DB_TABLE_SHOP_DISCOUNT, "*", "discount_id=".intval($_POST['discount_id'])); // Security fix with intval
+ 
 if ($row = $sql-> fetch()){
     $discount_id = $row['discount_id'];
     // $discount_name = $row['discount_name'];
@@ -207,13 +210,15 @@ if ($row = $sql-> fetch()){
 		}
 	} // The discount will not be applied if the wrong code is entered
 }
-
+ 
+ 
 // Filling basket from category = C; return to category overview
 // Filling basket from product  = P; return to product overview
 if ($_POST['fill_basket'] == 'C' or $_POST['fill_basket'] == 'P') {
     // refresh_cart(); // IPN addition // might screw up the session variables
     // IPN addition - sets two variables to help keep coding neat later on
-	$_POST['item_id'] = intval($_POST['item_id']); // Security enhancement
+	// you can't do this, with discount and properties it is string !!!!
+	//$_POST['item_id'] = intval($_POST['item_id']); // Security enhancement
     isset($_POST['item_id'])? $action_id=$_POST['item_id']: NULL;
     isset($_SESSION['shopping_cart'][$action_id]['item_track_stock'])
         && ($_SESSION['shopping_cart'][$action_id]['quantity']) < ($_SESSION['shopping_cart'][$action_id]['item_instock'])?
@@ -260,7 +265,7 @@ if ($_POST['fill_basket'] == 'C' or $_POST['fill_basket'] == 'P') {
 			}
 		} 
     }
-
+ 
     // Close the session (before a location redirect: otherwise the variables may not display correctly)
     session_write_close();
     // Return to original url
