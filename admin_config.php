@@ -187,7 +187,7 @@ if ($_POST['add_item'] == '1') {
         $item_quotation = 1;
     }	
     // Actual database insert of new product
-    $sql -> db_Insert(DB_TABLE_SHOP_ITEMS,
+    $sql -> insert(DB_TABLE_SHOP_ITEMS,
     "0,
 		'".intval($_POST['category_id'])."',
 		'".$tp->toDB($_POST['item_name'])."',
@@ -774,7 +774,8 @@ if ($action == "cat") {
   //-------------------------- Edit Existing Product --------------------------+
   //---------------------------------------------------------------------------+
 	$sql -> select(DB_TABLE_SHOP_ITEM_CATEGORIES, "*", "category_id=".$_GET['category_id']);
-	while($row = $sql-> fetch()){
+ 
+	while($row = $sql-> fetch()){ 
 	    $category_name = $row['category_name'];
 	}
 	// IPN addition - to pass $item_track_stock through to product array
@@ -1212,7 +1213,7 @@ $text = "
 		<select class='tbox' name='prod_discount_id'>
         <option value='' selected='selected'></option>";
             $sql4 = e107::getDb('4');
-            $sql4 -> select(DB_TABLE_SHOP_DISCOUNT, "*", " ORDER BY discount_name", false); // Select all discounts
+            $sql4 -> select(DB_TABLE_SHOP_DISCOUNT, "*", " ORDER BY discount_name", true); // Select all discounts
             while ($row4 = $sql4->fetch()) {
             	if ($row4['discount_id'] == $prod_discount_id) {
           			$text .= "<option value='".$row4['discount_id']."' selected='selected'>".$row4['discount_name']."</option>";
