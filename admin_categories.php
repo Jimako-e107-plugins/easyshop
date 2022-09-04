@@ -210,7 +210,7 @@ if ($_GET['edit_category'] == 1) {
 							<td>
 								<select class='tbox' name='category_main_id'>";
 		                        $sql2= e107::getDb('2');
-		                        $sql2 -> select(DB_TABLE_SHOP_MAIN_CATEGORIES, "*", "WHERE main_category_active_status = '2' ORDER BY main_category_order", false); // Select only active main categories
+		                        $sql2 -> select(DB_TABLE_SHOP_MAIN_CATEGORIES, "*", "WHERE main_category_active_status = '2' ORDER BY main_category_order", true); // Select only active main categories
 		                        // Add a blank option too: main category is not mandatory
                       			$text .= "<option value='' selected='selected'></option>";
 		                        while ($row2 = $sql2->fetch()) {

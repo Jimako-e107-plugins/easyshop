@@ -555,8 +555,9 @@ if ($action == 'edit') {
 	<div>
 		<br />".EASYSHOP_PUBLICMENU_02."
 	</div>";
-
+ 
 	// Fill the Cart with products from the basket
+	$array = array();
 	$count_items = count($_SESSION['shopping_cart']); // Count number of different products in basket
 	$array = $_SESSION['shopping_cart'];
 	// Show products in a sequence starting at 1
@@ -575,9 +576,10 @@ if ($action == 'edit') {
 				<td class='tbox'>".EASYSHOP_SHOP_27."</td>
 				<td class='tbox'>".EASYSHOP_SHOP_28."</td>
 			</tr>";
-
+ 
 	// For each product in the shopping cart array write PayPal details
     foreach($array as $id => $item) {
+		
 		// Debug info
 		// echo "{$id}, {$item['item_name']}, {$item['quantity']}, {$item['item_price']}, {$item['sku_number']}, {$item['shipping']}, {$item['shipping2']}, {$item['handling']}";
 		$display_sku_number = $item['sku_number'];
